@@ -41,7 +41,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [lives, setLives] = useState(3);
   const [timeRemainingTrack, setTimeRemainingTrack] = useState(timePerTrack);
   const [globalTimeRemaining, setGlobalTimeRemaining] = useState(60); // for Time Attack mode
-  const [history, setHistory] = useState<QuestionResult[]>([]);
   const [currentQuestionPoints, setCurrentQuestionPoints] = useState(100);
 
   // Local Multiplayer players state
@@ -49,6 +48,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     settings.playerNames ? settings.playerNames.map(name => ({ name, score: 0, streak: 0 })) : []
   );
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
+
+  // Synchronous REFS to prevent React state closure lag on game completion
+  const scoreRef = useRef<number>(0);
+  const historyRef = useRef<QuestionResult[]>([]);
 
   // Audio refs & timers
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -106,7 +109,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             return;
           }
 
-          // Shuffle tracks
           const shuffled = [...fetchedTracks].sort(() => Math.random() - 0.5);
           setTracks(shuffled);
           setDistractorPool(distractors);
@@ -144,7 +146,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     };
   }, [settings.mode, hasStarted, isLoading]);
 
-  // Build Options (1 Correct + 3 Smart Distractors)
+  // Finish Game Session with 100% up-to-date scoreRef and historyRef
+  const finishGameSession = useCallback(() => {
+    if (audioRef.current) audioRef.current.pause();
+    if (trackTimerIntervalRef.current) clearInterval(trackTimerIntervalRef.current);
+    if (globalTimerIntervalRef.current) clearInterval(globalTimerIntervalRef.current);
+    if (nextQuestionTimeoutRef.current) clearTimeout(nextQuestionTimeoutRef.current);
+
+    soundFx.playVictoryFanfare();
+
+    const fullHistory = historyRef.current;
+    const finalScore = scoreRef.current;
+    const correctCount = fullHistory.filter(h => h.isCorrect).length;
+    const totalCount = fullHistory.length || 1;
+    const avgResponse = fullHistory.reduce((acc, h) => acc + h.responseTimeMs, 0) / totalCount;
+
+    const stats: GameStats = {
+      score: finalScore,
+      correctCount,
+      totalQuestions: fullHistory.length,
+      maxStreak: 0,
+      averageResponseTimeMs: Math.round(avgResponse),
+      history: fullHistory
+    };
+
+    onFinishGame(stats, settings.mode === 'multiplayer' ? localPlayers : undefined);
+  }, [localPlayers, onFinishGame, settings.mode]);
+
+  // Build Options (1 Correct + 3 Smart Distractors from same theme)
   const setupQuestion = useCallback((index: number, availableTracks: Track[], availableDistractors: Track[]) => {
     const trackList = availableTracks.length > 0 ? availableTracks : tracks;
     if (index >= trackList.length || (settings.mode === 'classic' && index >= settings.trackCount)) {
@@ -172,7 +201,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     };
     setCorrectOption(correctOpt);
 
-    // Distractors MUST come strictly from this theme's track list!
+    // Pick 3 distractors strictly within this theme's tracks!
     const otherTracksInList = trackList.filter(t => t.id !== currentTrack.id);
     let pool: Track[] = otherTracksInList;
     if (pool.length < 3) {
@@ -205,7 +234,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     // Play preview audio
     if (audioRef.current) {
-      console.log(`🔊 [Audio Playback] Morceau ${index + 1} : "${currentTrack.title}" (${currentTrack.artist.name})`);
       audioRef.current.pause();
       audioRef.current.src = currentTrack.preview;
       audioRef.current.currentTime = 0;
@@ -216,8 +244,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         playPromise.then(() => {
           setIsPlayingAudio(true);
           setIsAudioBlocked(false);
-        }).catch(err => {
-          console.warn('⚠️ [Audio Autoplay Blocked]:', err);
+        }).catch(_ => {
           setIsAudioBlocked(true);
         });
       }
@@ -225,14 +252,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     questionStartTimeRef.current = Date.now();
 
-    // Start 10s track timer & linear score decay (-10 pts/sec after 1s grace period)
+    // Start 10s track timer & linear score decay (-10 pts/sec after 1.5s grace period)
     if (trackTimerIntervalRef.current) clearInterval(trackTimerIntervalRef.current);
     trackTimerIntervalRef.current = window.setInterval(() => {
       const elapsed = (Date.now() - questionStartTimeRef.current) / 1000;
       const remaining = Math.max(0, timePerTrack - elapsed);
       setTimeRemainingTrack(remaining);
 
-      // Linear score calculation (100 max -> -10 pts/sec after 1s grace)
+      // Linear score calculation (100 max -> -10 pts/sec after 1.5s grace)
       const currentScoreCalc = calculateQuestionScore(elapsed);
       setCurrentQuestionPoints(currentScoreCalc.finalPoints);
 
@@ -242,7 +269,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
     }, 100);
 
-  }, [tracks, theme.type, timePerTrack, settings]);
+  }, [tracks, timePerTrack, settings, finishGameSession]);
 
   // Start game IMMEDIATELY on user click
   const handleStartGameClick = () => {
@@ -269,6 +296,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (audioRef.current) audioRef.current.pause();
     soundFx.playWrongSound();
 
+    const result: QuestionResult = {
+      track,
+      correctOption: correctOpt,
+      isCorrect: false,
+      scoreGained: 0,
+      responseTimeMs: timePerTrack * 1000
+    };
+
+    historyRef.current.push(result);
+
     if (settings.mode === 'survival') {
       const newLives = lives - 1;
       setLives(newLives);
@@ -277,17 +314,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         return;
       }
     }
-
-    setHistory(prev => [
-      ...prev,
-      {
-        track,
-        correctOption: correctOpt,
-        isCorrect: false,
-        scoreGained: 0,
-        responseTimeMs: timePerTrack * 1000
-      }
-    ]);
 
     nextQuestionTimeoutRef.current = window.setTimeout(() => {
       advanceToNextQuestion();
@@ -313,7 +339,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const scoreCalc = calculateQuestionScore(responseTime / 1000);
       const pointsGained = scoreCalc.finalPoints;
 
-      setScore(prev => prev + pointsGained);
+      // Update ref synchronously
+      scoreRef.current += pointsGained;
+      setScore(scoreRef.current);
 
       if (settings.mode === 'multiplayer') {
         setLocalPlayers(prev => prev.map((player, idx) => {
@@ -324,20 +352,30 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }));
       }
 
-      setHistory(prev => [
-        ...prev,
-        {
-          track: currentTrack,
-          userAnswer: option,
-          correctOption,
-          isCorrect: true,
-          scoreGained: pointsGained,
-          responseTimeMs: responseTime
-        }
-      ]);
+      const result: QuestionResult = {
+        track: currentTrack,
+        userAnswer: option,
+        correctOption,
+        isCorrect: true,
+        scoreGained: pointsGained,
+        responseTimeMs: responseTime
+      };
+
+      historyRef.current.push(result);
 
     } else {
       soundFx.playWrongSound();
+
+      const result: QuestionResult = {
+        track: tracks[currentIndex],
+        userAnswer: option,
+        correctOption,
+        isCorrect: false,
+        scoreGained: 0,
+        responseTimeMs: responseTime
+      };
+
+      historyRef.current.push(result);
 
       if (settings.mode === 'survival') {
         const newLives = lives - 1;
@@ -347,18 +385,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           return;
         }
       }
-
-      setHistory(prev => [
-        ...prev,
-        {
-          track: tracks[currentIndex],
-          userAnswer: option,
-          correctOption,
-          isCorrect: false,
-          scoreGained: 0,
-          responseTimeMs: responseTime
-        }
-      ]);
     }
 
     nextQuestionTimeoutRef.current = window.setTimeout(() => {
@@ -379,30 +405,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     setCurrentIndex(nextIdx);
     setupQuestion(nextIdx, tracks, distractorPool);
-  };
-
-  const finishGameSession = () => {
-    if (audioRef.current) audioRef.current.pause();
-    if (trackTimerIntervalRef.current) clearInterval(trackTimerIntervalRef.current);
-    if (globalTimerIntervalRef.current) clearInterval(globalTimerIntervalRef.current);
-    if (nextQuestionTimeoutRef.current) clearTimeout(nextQuestionTimeoutRef.current);
-
-    soundFx.playVictoryFanfare();
-
-    const correctCount = history.filter(h => h.isCorrect).length;
-    const totalCount = history.length || 1;
-    const avgResponse = history.reduce((acc, h) => acc + h.responseTimeMs, 0) / totalCount;
-
-    const stats: GameStats = {
-      score,
-      correctCount,
-      totalQuestions: history.length,
-      maxStreak: 0,
-      averageResponseTimeMs: Math.round(avgResponse),
-      history
-    };
-
-    onFinishGame(stats, settings.mode === 'multiplayer' ? localPlayers : undefined);
   };
 
   return (

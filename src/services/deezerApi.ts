@@ -90,33 +90,24 @@ export const PRESET_THEMES: CategoryTheme[] = [
 // Local Vite proxy '/api-deezer'
 const DEEZER_API_BASE = '/api-deezer';
 
-// Strict Deezer API fetcher with detailed console logging for easy API tracking
+const isDev = import.meta.env.DEV;
+
 async function fetchDeezer(endpoint: string): Promise<any> {
   const url = `${DEEZER_API_BASE}${endpoint}`;
-  console.log(`📡 [API Deezer Request] Fetching: ${url}`);
+  if (isDev) console.log(`📡 [API Deezer] Fetching ${endpoint}`);
   try {
     const res = await fetch(url);
     if (res.ok) {
       const data = await res.json();
-      if (data && !data.error) {
-        console.log(`✅ [API Deezer Success] ${endpoint} -> ${data.data?.length || 0} éléments reçus`);
-        return data;
-      } else if (data.error) {
-        console.warn(`⚠️ [API Deezer Error Response]`, data.error);
-      }
-    } else {
-      console.warn(`⚠️ [API Deezer HTTP Error] Status ${res.status} sur ${url}`);
+      if (data && !data.error) return data;
     }
-  } catch (err) {
-    console.error(`❌ [API Deezer Network Error] Impossible d'atteindre ${url}:`, err);
-  }
+  } catch (_) {}
   return null;
 }
 
 // Search for artists exclusively on Deezer
 export async function searchArtists(query: string) {
   if (!query.trim()) return [];
-  console.log(`🔍 [Recherche Artiste Deezer] Query: "${query}"`);
   const data = await fetchDeezer(`/search/artist?q=${encodeURIComponent(query)}&limit=12`);
   if (data && data.data) {
     return data.data.map((artist: any) => ({
@@ -131,25 +122,15 @@ export async function searchArtists(query: string) {
 
 // Fetch tracks for a specific artist strictly from Deezer
 export async function getArtistTracks(artistId: number | string, artistName: string): Promise<Track[]> {
-  console.log(`🎵 [Chargement Morceaux Artiste Deezer] Artiste: ${artistName} (ID: ${artistId})`);
-  
-  // 1. Try artist top tracks
   const data = await fetchDeezer(`/artist/${artistId}/top?limit=50`);
   if (data && data.data) {
     const tracks = filterValidDeezerTracks(data.data, artistName);
-    if (tracks.length >= 4) {
-      console.log(`🎧 [Deezer Tracks Loaded] ${tracks.length} morceaux valides récupérés pour ${artistName}`);
-      return tracks;
-    }
+    if (tracks.length >= 4) return tracks;
   }
 
-  // 2. Fallback to Deezer search for this artist name
-  console.log(`🔄 [Fallback Recherche Deezer] Recherche des morceaux de "${artistName}"`);
   const searchData = await fetchDeezer(`/search?q=${encodeURIComponent(artistName)}&limit=50`);
   if (searchData && searchData.data) {
-    const tracks = filterValidDeezerTracks(searchData.data, artistName);
-    console.log(`🎧 [Deezer Search Loaded] ${tracks.length} morceaux valides récupérés pour ${artistName}`);
-    return tracks;
+    return filterValidDeezerTracks(searchData.data, artistName);
   }
 
   return [];
@@ -157,31 +138,24 @@ export async function getArtistTracks(artistId: number | string, artistName: str
 
 // Fetch tracks for a playlist strictly from Deezer
 export async function getPlaylistTracks(theme: CategoryTheme): Promise<Track[]> {
-  console.log(`🎶 [Chargement Thème Deezer] Thème: "${theme.name}" (Type: ${theme.type}, DeezerID: ${theme.deezerId})`);
   let rawData: any[] = [];
 
-  // 1. Try chart endpoint if type === 'chart'
   if (theme.type === 'chart') {
     const chartData = await fetchDeezer('/chart/0/tracks?limit=50');
     if (chartData && chartData.data) rawData = chartData.data;
   }
 
-  // 2. Try playlist endpoint if ID exists
   if (rawData.length === 0 && theme.deezerId) {
     const playlistData = await fetchDeezer(`/playlist/${theme.deezerId}/tracks?limit=50`);
     if (playlistData && playlistData.data) rawData = playlistData.data;
   }
 
-  // 3. Fallback to Deezer search for theme query strictly on Deezer
   if (rawData.length === 0 && theme.query) {
-    console.log(`🔍 [Recherche Deezer pour Thème] Query: "${theme.query}"`);
     const searchData = await fetchDeezer(`/search?q=${encodeURIComponent(theme.query)}&limit=50`);
     if (searchData && searchData.data) rawData = searchData.data;
   }
 
-  const tracks = filterValidDeezerTracks(rawData);
-  console.log(`🎧 [Playlist Loaded] Thème "${theme.name}" : ${tracks.length} morceaux valides avec extraits audio 30s`);
-  return tracks;
+  return filterValidDeezerTracks(rawData);
 }
 
 // Helper to format Deezer tracks & filter items with preview MP3 URLs

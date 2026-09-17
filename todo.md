@@ -1,4 +1,3 @@
-Dernières corrections appliquées :
-    - [x] Extraits réglés strictement sur 10 secondes (Passage explicite de 10s dans GameModeModal et GameBoard)
-    - [x] Exactement 10 morceaux par partie en mode Classique
-    - [x] Filtrage 100% thématique sans aucun artiste hors-sujet (Les leurres pour Rap FR sont pris à 100% dans la playlist Rap FR, plus aucune Ariana Grande ou artiste pop externe)
+Points corrigés avec succès :
+    - [x] Enregistrement 100% exact des 10 morceaux & du score complet (Corrigé : passage à des références synchrones `scoreRef` et `historyRef` pour éliminer tout retard de mise à jour de l'état React. Les 10 morceaux et la totalité des points sont désormais garantis 100% enregistrés à la fin)
+    - [x] Délai de grâce augmenté à 1.5 seconde (Le score reste au maximum 100 pts pendant 1.5s au début de chaque extrait audio)
