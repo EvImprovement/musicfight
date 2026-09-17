@@ -38,6 +38,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
               <h4>Mode Artiste & Playlists</h4>
               <p>
                 - <strong>Mode Artiste</strong> : Les 4 choix proposés sont 4 titres différents du même artiste !<br />
+                - <strong>Mode Album Culte</strong> : Écoutez et devinez les morceaux d'un album spécifique !<br />
                 - <strong>Playlists Thématiques</strong> : 100% des titres et distractors sont issus du thème choisi.
               </p>
             </div>

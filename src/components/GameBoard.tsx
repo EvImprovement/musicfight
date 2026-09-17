@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Track, Option, CategoryTheme, GameSettings, QuestionResult, GameStats, LocalPlayerState } from '../types/game';
-import { getPlaylistTracks, getArtistTracks, getGeneralDistractorTracks } from '../services/deezerApi';
+import { getPlaylistTracks, getArtistTracks, getAlbumTracks, getGeneralDistractorTracks } from '../services/deezerApi';
 import { calculateQuestionScore } from '../utils/scoreCalculator';
 import { soundFx } from '../services/soundEffects';
 import { AudioVisualizer } from './AudioVisualizer';
@@ -106,6 +106,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           fetchedTracks = await getPlaylistTracks(theme);
         } else if (theme.type === 'artist') {
           fetchedTracks = await getArtistTracks(theme.deezerId || '', theme.name);
+        } else if (theme.type === 'album') {
+          fetchedTracks = await getAlbumTracks(theme.deezerId || '', theme.name, theme.query || '');
         }
 
         const distractors = await getGeneralDistractorTracks();

@@ -120,6 +120,22 @@ export async function searchArtists(query: string) {
   return [];
 }
 
+// Search for albums on Deezer
+export async function searchAlbums(query: string) {
+  if (!query.trim()) return [];
+  const data = await fetchDeezer(`/search/album?q=${encodeURIComponent(query)}&limit=12`);
+  if (data && data.data) {
+    return data.data.map((album: any) => ({
+      id: album.id,
+      title: album.title,
+      artistName: album.artist?.name || 'Artiste Inconnu',
+      cover: album.cover_medium || album.cover_big,
+      nb_tracks: album.nb_tracks
+    }));
+  }
+  return [];
+}
+
 // Fetch tracks for a specific artist strictly from Deezer
 export async function getArtistTracks(artistId: number | string, artistName: string): Promise<Track[]> {
   const data = await fetchDeezer(`/artist/${artistId}/top?limit=50`);
@@ -133,6 +149,33 @@ export async function getArtistTracks(artistId: number | string, artistName: str
     return filterValidDeezerTracks(searchData.data, artistName);
   }
 
+  return [];
+}
+
+// Fetch tracks for a specific album strictly from Deezer
+export async function getAlbumTracks(albumId: number | string, albumTitle: string, artistName: string): Promise<Track[]> {
+  const data = await fetchDeezer(`/album/${albumId}/tracks?limit=50`);
+  if (data && data.data) {
+    return data.data
+      .filter((t: any) => t && t.preview && (t.title_short || t.title))
+      .map((t: any) => ({
+        id: t.id,
+        title: t.title_short || t.title,
+        artist: {
+          id: t.artist?.id || '',
+          name: t.artist?.name || artistName,
+          picture_medium: t.artist?.picture_medium
+        },
+        album: {
+          id: albumId,
+          title: albumTitle,
+          cover_medium: t.album?.cover_medium,
+          cover_big: t.album?.cover_big || t.album?.cover_medium
+        },
+        preview: t.preview,
+        duration: t.duration || 30
+      }));
+  }
   return [];
 }
 

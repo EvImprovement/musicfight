@@ -73,7 +73,7 @@ export interface CategoryTheme {
   name: string;
   description: string;
   icon: string;
-  type: 'playlist' | 'artist' | 'chart';
+  type: 'playlist' | 'artist' | 'chart' | 'album';
   deezerId?: number | string;
   query?: string;
   coverUrl?: string;
