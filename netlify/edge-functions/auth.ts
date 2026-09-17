@@ -2,11 +2,38 @@ const PASSWORD = Deno.env.get("SITE_PASSWORD") || "MUSICFIGHT2026";
 const COOKIE_NAME = "mf_auth_session";
 const COOKIE_VALUE = "authenticated_user_ok";
 
+// In-memory rate limiting store for Edge Function instance
+const ipRateLimits = new Map<string, { count: number; resetTime: number }>();
+const loginAttempts = new Map<string, { count: number; resetTime: number }>();
+
+function isRateLimited(map: Map<string, { count: number; resetTime: number }>, key: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = map.get(key);
+
+  if (!entry || now > entry.resetTime) {
+    map.set(key, { count: 1, resetTime: now + windowMs });
+    return false;
+  }
+
+  entry.count++;
+  if (entry.count > maxRequests) {
+    return true;
+  }
+  return false;
+}
+
 export default async (request: Request, context: any) => {
   const url = new URL(request.url);
+  const clientIp = request.headers.get("x-nf-client-connection-ip") || request.headers.get("x-forwarded-for") || "unknown-ip";
 
-  // Bypass API proxy requests and static asset extensions if needed
+  // Rate Limiting on API proxy calls (/api-deezer/*) : Max 60 requests / minute per IP
   if (url.pathname.startsWith('/api-deezer')) {
+    if (isRateLimited(ipRateLimits, clientIp, 60, 60 * 1000)) {
+      return new Response(JSON.stringify({ error: "Trop de requêtes vers l'API. Veuillez patienter un moment." }), {
+        status: 429,
+        headers: { "Content-Type": "application/json", "Retry-After": "60" }
+      });
+    }
     return context.next();
   }
 
@@ -21,8 +48,15 @@ export default async (request: Request, context: any) => {
     });
   }
 
-  // Handle password submit (POST)
+  // Handle password submit (POST) with Rate Limiting (Max 5 attempts / 5 minutes per IP)
   if (request.method === "POST" && url.pathname === "/") {
+    if (isRateLimited(loginAttempts, clientIp, 5, 5 * 60 * 1000)) {
+      return new Response(renderLoginPage(false, "⚠️ Trop de tentatives de connexion. Réessayez dans 5 minutes."), {
+        status: 429,
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
+    }
+
     try {
       const formData = await request.formData();
       const submittedPass = formData.get("password");
@@ -56,7 +90,8 @@ export default async (request: Request, context: any) => {
   return renderLoginPage(false);
 };
 
-function renderLoginPage(isError = false) {
+function renderLoginPage(isError = false, customErrorMessage?: string) {
+  const errorMessage = customErrorMessage || "⚠️ Mot de passe incorrect. Réessayez !";
   const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -171,7 +206,7 @@ function renderLoginPage(isError = false) {
     <h1 class="auth-title">MusicFight Private</h1>
     <p class="auth-subtitle">Accès privé réservé. Veuillez saisir le mot de passe pour continuer.</p>
 
-    ${isError ? '<div class="error-msg">⚠️ Mot de passe incorrect. Réessayez !</div>' : ''}
+    ${(isError || customErrorMessage) ? `<div class="error-msg">${errorMessage}</div>` : ''}
 
     <form method="POST" action="/">
       <div class="form-group">

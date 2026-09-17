@@ -1529,12 +1529,219 @@ body {
   line-height: 1.4;
 }
 
-/* Mobile responsiveness */
-@media (max-width: 640px) {
-  .hero-title { font-size: 2rem; }
-  .mode-options-grid { grid-template-columns: 1fr; }
-  .options-grid { grid-template-columns: 1fr; }
-  .stats-grid { grid-template-columns: 1fr; }
-  .navbar-container { padding: 0.8rem 1rem; }
-  .player-name-display { display: none; }
+/* Mobile Responsiveness & Touch WebApp Optimization */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem 0.85rem 3rem;
+  }
+
+  .navbar-container {
+    padding: 0.75rem 1rem;
+  }
+
+  .brand-title {
+    font-size: 1.25rem;
+  }
+
+  .brand-tagline {
+    display: none;
+  }
+
+  .hero-banner {
+    padding: 1.5rem 1rem;
+    border-radius: var(--radius-md);
+  }
+
+  .hero-title {
+    font-size: 1.65rem;
+    line-height: 1.25;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .selector-tabs {
+    gap: 0.4rem;
+  }
+
+  .tab-btn {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.82rem;
+  }
+
+  .tab-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .theme-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .artist-results-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .artist-card {
+    padding: 0.85rem;
+  }
+
+  .artist-avatar-wrapper {
+    width: 70px;
+    height: 70px;
+  }
+
+  .artist-name {
+    font-size: 0.95rem;
+  }
+
+  .artist-play-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.78rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .gameboard-container {
+    gap: 1rem;
+  }
+
+  .gameboard-header {
+    padding: 0.6rem 0.85rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .mode-badge-info {
+    order: -1;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .quit-btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .score-summary-box {
+    gap: 0.4rem;
+  }
+
+  .score-pill, .streak-pill {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.82rem;
+  }
+
+  .track-player-card {
+    padding: 1.25rem 1rem;
+    border-radius: var(--radius-md);
+    gap: 1rem;
+  }
+
+  .visualizer-canvas {
+    max-width: 100%;
+    height: 48px;
+  }
+
+  .options-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .option-button {
+    padding: 1rem;
+    min-height: 60px;
+    border-radius: var(--radius-md);
+  }
+
+  .option-title {
+    font-size: 0.98rem;
+  }
+
+  .option-artist {
+    font-size: 0.8rem;
+  }
+
+  .reveal-modal-overlay {
+    padding: 1rem;
+  }
+
+  .reveal-modal-card {
+    padding: 1.25rem 1rem;
+    border-radius: var(--radius-md);
+    gap: 1rem;
+  }
+
+  .reveal-status-title {
+    font-size: 1.3rem;
+  }
+
+  .reveal-status-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .reveal-album-cover {
+    width: 110px;
+    height: 110px;
+  }
+
+  .reveal-track-title {
+    font-size: 1.1rem;
+  }
+
+  .reveal-track-artist {
+    font-size: 0.9rem;
+  }
+
+  .result-card {
+    padding: 1.5rem 1rem;
+    gap: 1.25rem;
+  }
+
+  .result-title {
+    font-size: 1.6rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+  }
+
+  .stat-card {
+    padding: 0.85rem 0.5rem;
+  }
+
+  .stat-value {
+    font-size: 1.4rem;
+  }
+
+  .result-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .result-actions button {
+    width: 100%;
+  }
+
+  .modal-card {
+    padding: 1.25rem 1rem;
+    border-radius: var(--radius-md);
+    margin: 0.5rem;
+  }
+
+  .mode-options-grid {
+    grid-template-columns: 1fr;
+  }
 }
+
+@media (max-width: 400px) {
+  .artist-results-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
