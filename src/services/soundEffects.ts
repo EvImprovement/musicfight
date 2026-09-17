@@ -1,6 +1,7 @@
 class SoundEffectsService {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
+  private listeners: ((muted: boolean) => void)[] = [];
 
   public init() {
     if (!this.ctx) {
@@ -16,10 +17,18 @@ class SoundEffectsService {
 
   public setMuted(muted: boolean) {
     this.isMuted = muted;
+    this.listeners.forEach(cb => cb(muted));
   }
 
   public getMuted(): boolean {
     return this.isMuted;
+  }
+
+  public subscribeMute(cb: (muted: boolean) => void) {
+    this.listeners.push(cb);
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== cb);
+    };
   }
 
   // Play a soft tick sound for countdown

@@ -2,8 +2,8 @@
  * Score calculation algorithm for MusicFight.
  * Max score = 100 points per question.
  * Time per track = 10 seconds.
- * Grace period = 1.5 seconds (allows buffer/audio startup time).
- * After grace period, score decreases linearly by 10 points per second.
+ * Grace period = 1.5 seconds (full 100 pts while audio starts).
+ * Between 1.5s and 10.0s, score decreases linearly down to 0 pts at 10.0s.
  */
 
 export function calculateQuestionScore(elapsedTimeSeconds: number): {
@@ -11,20 +11,26 @@ export function calculateQuestionScore(elapsedTimeSeconds: number): {
   finalPoints: number;
 } {
   const t = Math.max(0, Math.min(10, elapsedTimeSeconds));
-  const gracePeriod = 1.5; // 1.5 seconds grace period before score decreases
+  const gracePeriod = 1.5;
+  const totalTime = 10.0;
 
-  let points = 100;
-  if (t > gracePeriod) {
-    const elapsedAfterGrace = t - gracePeriod;
-    points = Math.round(100 - elapsedAfterGrace * 10);
+  if (t <= gracePeriod) {
+    return { basePoints: 100, finalPoints: 100 };
   }
 
-  // Minimum 10 points if answered within 10 seconds
-  const finalPoints = Math.max(10, Math.min(100, points));
+  if (t >= totalTime) {
+    return { basePoints: 0, finalPoints: 0 };
+  }
+
+  // Linear decay from 100 to 0 over 8.5 seconds
+  const remainingTimeWindow = totalTime - gracePeriod; // 8.5s
+  const elapsedInWindow = t - gracePeriod;
+  const ratio = 1 - (elapsedInWindow / remainingTimeWindow);
+  const points = Math.max(0, Math.min(100, Math.round(100 * ratio)));
 
   return {
-    basePoints: finalPoints,
-    finalPoints
+    basePoints: points,
+    finalPoints: points
   };
 }
 

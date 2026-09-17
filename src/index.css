@@ -896,6 +896,127 @@ body {
   to { transform: scale(1.04); }
 }
 
+/* Central Reveal Modal Overlay */
+.reveal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: rgba(9, 10, 21, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.reveal-modal-card {
+  background: #111326;
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  animation: popScale 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.reveal-modal-card.success {
+  border: 2px solid var(--success-color);
+  box-shadow: 0 0 35px rgba(0, 230, 118, 0.35);
+}
+
+.reveal-modal-card.fail {
+  border: 2px solid var(--danger-color);
+  box-shadow: 0 0 35px rgba(255, 51, 102, 0.35);
+}
+
+.reveal-status-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.reveal-status-icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.reveal-status-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  margin-bottom: 0.2rem;
+}
+
+.reveal-points-badge {
+  display: inline-block;
+  background: rgba(0, 230, 118, 0.2);
+  border: 1px solid var(--success-color);
+  color: var(--success-color);
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.reveal-points-badge.fail {
+  background: rgba(255, 51, 102, 0.2);
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+}
+
+.reveal-track-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(0,0,0,0.3);
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+  width: 100%;
+}
+
+.reveal-album-cover {
+  width: 140px;
+  height: 140px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+}
+
+.reveal-track-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.reveal-track-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.2rem;
+}
+
+.reveal-track-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.reveal-track-artist {
+  font-size: 1rem;
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
 .gameboard-header {
   display: flex;
   align-items: center;

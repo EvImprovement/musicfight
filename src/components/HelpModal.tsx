@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Zap, Trophy, Flame, Keyboard } from 'lucide-react';
+import { X, Zap, Trophy, Keyboard } from 'lucide-react';
 
 interface HelpModalProps {
   onClose: () => void;
@@ -19,29 +19,32 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
           <div className="help-item">
             <Zap className="help-icon text-gold" />
             <div>
-              <h4>Score Dégressif (100 pts max)</h4>
-              <p>Plus vous répondez vite après le début du morceau, plus vous gagnez de points. Le score commence à 100 points et décroît avec le temps !</p>
-            </div>
-          </div>
-
-          <div className="help-item">
-            <Flame className="help-icon text-orange" />
-            <div>
-              <h4>Système de Combo / Streak</h4>
-              <p>Enchaînez plusieurs bonnes réponses consécutives pour débloquer un multiplicateur de score (jusqu'à x1.5 !).</p>
+              <h4>Score Dégressif Linéaire (100 pts max)</h4>
+              <p>Vous avez <strong>10 secondes</strong> par morceau. Les <strong>1.5 premières secondes</strong> vous conservent 100 points. Ensuite, le score diminue linéairement jusqu'à <strong>0 point à 10s</strong> !</p>
             </div>
           </div>
 
           <div className="help-item">
             <Keyboard className="help-icon text-accent" />
             <div>
-              <h4>Raccourcis Clavier</h4>
-              <p>Utilisez les touches <strong>1</strong>, <strong>2</strong>, <strong>3</strong> et <strong>4</strong> de votre clavier pour sélectionner rapidement une réponse !</p>
+              <h4>Raccourcis Clavier (1, 2, 3, 4)</h4>
+              <p>Utilisez les touches <strong>1</strong>, <strong>2</strong>, <strong>3</strong> et <strong>4</strong> de votre clavier pour répondre ultra-rapidement sans utiliser la souris !</p>
             </div>
           </div>
 
           <div className="help-item">
             <Trophy className="help-icon text-purple" />
+            <div>
+              <h4>Mode Artiste & Playlists</h4>
+              <p>
+                - <strong>Mode Artiste</strong> : Les 4 choix proposés sont 4 titres différents du même artiste !<br />
+                - <strong>Playlists Thématiques</strong> : 100% des titres et distractors sont issus du thème choisi.
+              </p>
+            </div>
+          </div>
+
+          <div className="help-item">
+            <Trophy className="help-icon text-gold" />
             <div>
               <h4>Modes de Jeu</h4>
               <p>

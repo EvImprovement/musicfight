@@ -5,7 +5,7 @@ import { calculateQuestionScore } from '../utils/scoreCalculator';
 import { soundFx } from '../services/soundEffects';
 import { AudioVisualizer } from './AudioVisualizer';
 import { QuestionCard } from './QuestionCard';
-import { Loader2, Heart, Award, Volume2, Play } from 'lucide-react';
+import { Loader2, Heart, Award, Volume2, Play, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 interface GameBoardProps {
   theme: CategoryTheme;
@@ -34,6 +34,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [correctOption, setCorrectOption] = useState<Option | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [isAudioBlocked, setIsAudioBlocked] = useState(false);
+  const [lastPointsGained, setLastPointsGained] = useState(0);
 
   // Scoring & timers (10s timer per track)
   const timePerTrack = settings.timePerTrack || 10;
@@ -61,9 +62,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const nextQuestionTimeoutRef = useRef<number | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
-  // Clean up all timers and stop audio on component unmount
+  // Clean up all timers and stop audio on component unmount & sync MUTE toggle
   useEffect(() => {
+    const unsubMute = soundFx.subscribeMute((muted) => {
+      if (audioRef.current) {
+        audioRef.current.muted = muted;
+      }
+    });
+
     return () => {
+      unsubMute();
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = '';
@@ -186,6 +194,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     setSelectedOption(null);
     setIsAnswered(false);
+    setLastPointsGained(0);
     setTimeRemainingTrack(timePerTrack);
     setCurrentQuestionPoints(100);
 
@@ -238,6 +247,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       audioRef.current.src = currentTrack.preview;
       audioRef.current.currentTime = 0;
       audioRef.current.volume = 1.0;
+      audioRef.current.muted = soundFx.getMuted();
 
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
@@ -259,7 +269,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const remaining = Math.max(0, timePerTrack - elapsed);
       setTimeRemainingTrack(remaining);
 
-      // Linear score calculation (100 max -> -10 pts/sec after 1.5s grace)
+      // Linear score calculation (100 max -> 0 pts at 10.0s after 1.5s grace)
       const currentScoreCalc = calculateQuestionScore(elapsed);
       setCurrentQuestionPoints(currentScoreCalc.finalPoints);
 
@@ -293,6 +303,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (isAnswered) return;
     setIsAnswered(true);
     setIsPlayingAudio(false);
+    setLastPointsGained(0);
     if (audioRef.current) audioRef.current.pause();
     soundFx.playWrongSound();
 
@@ -310,14 +321,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const newLives = lives - 1;
       setLives(newLives);
       if (newLives <= 0) {
-        nextQuestionTimeoutRef.current = window.setTimeout(() => finishGameSession(), 1500);
+        nextQuestionTimeoutRef.current = window.setTimeout(() => finishGameSession(), 2000);
         return;
       }
     }
 
     nextQuestionTimeoutRef.current = window.setTimeout(() => {
       advanceToNextQuestion();
-    }, 2000);
+    }, 2200);
   };
 
   const handleSelectOption = (option: Option) => {
@@ -338,6 +349,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const currentTrack = tracks[currentIndex];
       const scoreCalc = calculateQuestionScore(responseTime / 1000);
       const pointsGained = scoreCalc.finalPoints;
+      setLastPointsGained(pointsGained);
 
       // Update ref synchronously
       scoreRef.current += pointsGained;
@@ -365,6 +377,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     } else {
       soundFx.playWrongSound();
+      setLastPointsGained(0);
 
       const result: QuestionResult = {
         track: tracks[currentIndex],
@@ -381,7 +394,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         const newLives = lives - 1;
         setLives(newLives);
         if (newLives <= 0) {
-          nextQuestionTimeoutRef.current = window.setTimeout(() => finishGameSession(), 1800);
+          nextQuestionTimeoutRef.current = window.setTimeout(() => finishGameSession(), 2000);
           return;
         }
       }
@@ -389,7 +402,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     nextQuestionTimeoutRef.current = window.setTimeout(() => {
       advanceToNextQuestion();
-    }, 2000);
+    }, 2200);
   };
 
   const advanceToNextQuestion = () => {
@@ -406,6 +419,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setCurrentIndex(nextIdx);
     setupQuestion(nextIdx, tracks, distractorPool);
   };
+
+  const currentTrack = tracks[currentIndex];
+  const isSelectedCorrect = selectedOption && correctOption && selectedOption.id === correctOption.id;
 
   return (
     <div className="gameboard-container">
@@ -428,7 +444,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div className="countdown-content">
             <span className="theme-badge-sm">{theme.icon} {theme.name}</span>
             <h2 className="countdown-sub">Prêt pour le Blind Test ?</h2>
-            <p className="countdown-desc">10 secondes par morceau • Décompte de score linéaire</p>
+            <p className="countdown-desc">10s par morceau • 1.5s de grâce • Score dégressif jusqu'à 0 pt</p>
             <button className="btn-primary start-audio-trigger-btn" onClick={handleStartGameClick}>
               <Play className="icon-sm" /> DÉMARRER LE BLIND TEST
             </button>
@@ -499,20 +515,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 />
               </div>
             </div>
-
-            {isAnswered && tracks[currentIndex] && (
-              <div className="revealed-track-info fade-in">
-                <img
-                  src={tracks[currentIndex].album.cover_big || tracks[currentIndex].album.cover_medium}
-                  alt={tracks[currentIndex].title}
-                  className="album-cover-mini"
-                />
-                <div className="track-text">
-                  <h3 className="track-title-revealed">{tracks[currentIndex].title}</h3>
-                  <p className="track-artist-revealed">{tracks[currentIndex].artist.name}</p>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* 4 Multiple Choice Options */}
@@ -523,6 +525,52 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             isAnswered={isAnswered}
             onSelectOption={handleSelectOption}
           />
+
+          {/* CENTRAL REVEAL MODAL OVERLAY WHEN ANSWERED */}
+          {isAnswered && currentTrack && (
+            <div className="reveal-modal-overlay">
+              <div className={`reveal-modal-card ${isSelectedCorrect ? 'success' : 'fail'}`}>
+                <div className="reveal-status-header">
+                  {isSelectedCorrect ? (
+                    <>
+                      <CheckCircle2 className="reveal-status-icon text-success" />
+                      <div>
+                        <h2 className="reveal-status-title text-success">Bonne réponse !</h2>
+                        <span className="reveal-points-badge">+{lastPointsGained} points</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {selectedOption ? (
+                        <XCircle className="reveal-status-icon text-danger" />
+                      ) : (
+                        <Clock className="reveal-status-icon text-orange" />
+                      )}
+                      <div>
+                        <h2 className="reveal-status-title text-danger">
+                          {selectedOption ? 'Mauvaise réponse !' : 'Temps écoulé !'}
+                        </h2>
+                        <span className="reveal-points-badge fail">+0 point</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="reveal-track-details">
+                  <img
+                    src={currentTrack.album.cover_big || currentTrack.album.cover_medium}
+                    alt={currentTrack.title}
+                    className="reveal-album-cover"
+                  />
+                  <div className="reveal-track-meta">
+                    <span className="reveal-track-label">C'était :</span>
+                    <h3 className="reveal-track-title">{currentTrack.title}</h3>
+                    <p className="reveal-track-artist">{currentTrack.artist.name}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
