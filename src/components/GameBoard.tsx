@@ -446,7 +446,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div className="countdown-content">
             <span className="theme-badge-sm">{theme.icon} {theme.name}</span>
             <h2 className="countdown-sub">Prêt pour le Blind Test ?</h2>
-            <p className="countdown-desc">10s par morceau • 0.75s de grâce • Score dégressif jusqu'à 0 pt</p>
+            <p className="countdown-desc">10s par morceau • 0.75s de grâce • Score de 100 à 50 pts (0 pt en cas d'erreur)</p>
             <button className="btn-primary start-audio-trigger-btn" onClick={handleStartGameClick}>
               <Play className="icon-sm" /> DÉMARRER LE BLIND TEST
             </button>
