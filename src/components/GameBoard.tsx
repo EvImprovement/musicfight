@@ -52,6 +52,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Synchronous REFS to prevent React state closure lag on game completion
   const scoreRef = useRef<number>(0);
+  const livesRef = useRef<number>(3);
   const historyRef = useRef<QuestionResult[]>([]);
 
   // Audio refs & timers
@@ -320,9 +321,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     historyRef.current.push(result);
 
     if (settings.mode === 'survival') {
-      const newLives = lives - 1;
-      setLives(newLives);
-      if (newLives <= 0) {
+      livesRef.current -= 1;
+      setLives(livesRef.current);
+      if (livesRef.current <= 0) {
         nextQuestionTimeoutRef.current = window.setTimeout(() => finishGameSession(), 2000);
         return;
       }
@@ -393,9 +394,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       historyRef.current.push(result);
 
       if (settings.mode === 'survival') {
-        const newLives = lives - 1;
-        setLives(newLives);
-        if (newLives <= 0) {
+        livesRef.current -= 1;
+        setLives(livesRef.current);
+        if (livesRef.current <= 0) {
           nextQuestionTimeoutRef.current = window.setTimeout(() => finishGameSession(), 2000);
           return;
         }
