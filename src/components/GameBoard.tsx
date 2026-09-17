@@ -107,7 +107,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         } else if (theme.type === 'artist') {
           fetchedTracks = await getArtistTracks(theme.deezerId || '', theme.name);
         } else if (theme.type === 'album') {
-          fetchedTracks = await getAlbumTracks(theme.deezerId || '', theme.name, theme.query || '');
+          fetchedTracks = await getAlbumTracks(theme.deezerId || '', theme.name, theme.query || '', theme.coverUrl);
         }
 
         const distractors = await getGeneralDistractorTracks();
@@ -560,7 +560,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
                 <div className="reveal-track-details">
                   <img
-                    src={currentTrack.album.cover_big || currentTrack.album.cover_medium}
+                    src={currentTrack.album.cover_big || currentTrack.album.cover_medium || theme.coverUrl}
                     alt={currentTrack.title}
                     className="reveal-album-cover"
                   />

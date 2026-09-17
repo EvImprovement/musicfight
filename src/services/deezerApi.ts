@@ -153,7 +153,11 @@ export async function getArtistTracks(artistId: number | string, artistName: str
 }
 
 // Fetch tracks for a specific album strictly from Deezer
-export async function getAlbumTracks(albumId: number | string, albumTitle: string, artistName: string): Promise<Track[]> {
+export async function getAlbumTracks(albumId: number | string, albumTitle: string, artistName: string, fallbackCoverUrl?: string): Promise<Track[]> {
+  const albumDetail = await fetchDeezer(`/album/${albumId}`);
+  const albumCoverMedium = albumDetail?.cover_medium || fallbackCoverUrl;
+  const albumCoverBig = albumDetail?.cover_big || albumDetail?.cover_xl || albumCoverMedium;
+
   const data = await fetchDeezer(`/album/${albumId}/tracks?limit=50`);
   if (data && data.data) {
     return data.data
@@ -169,8 +173,8 @@ export async function getAlbumTracks(albumId: number | string, albumTitle: strin
         album: {
           id: albumId,
           title: albumTitle,
-          cover_medium: t.album?.cover_medium,
-          cover_big: t.album?.cover_big || t.album?.cover_medium
+          cover_medium: t.album?.cover_medium || albumCoverMedium,
+          cover_big: t.album?.cover_big || t.album?.cover_medium || albumCoverBig
         },
         preview: t.preview,
         duration: t.duration || 30
