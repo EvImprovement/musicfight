@@ -50,9 +50,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   );
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
 
-  // Synchronous REFS to prevent React state closure lag on game completion
+  // Synchronous REFS to prevent React state closure lag on timers & timeouts
   const scoreRef = useRef<number>(0);
   const livesRef = useRef<number>(3);
+  const currentIndexRef = useRef<number>(0);
+  const tracksRef = useRef<Track[]>([]);
   const historyRef = useRef<QuestionResult[]>([]);
 
   // Audio refs & timers
@@ -121,6 +123,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           }
 
           const shuffled = [...fetchedTracks].sort(() => Math.random() - 0.5);
+          tracksRef.current = shuffled;
           setTracks(shuffled);
           setDistractorPool(distractors);
           setIsLoading(false);
@@ -289,6 +292,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     soundFx.init();
     soundFx.playCountdownGo();
     setHasStarted(true);
+    currentIndexRef.current = 0;
+    livesRef.current = 3;
+    scoreRef.current = 0;
+    historyRef.current = [];
     setupQuestion(0, tracks, distractorPool);
   };
 
@@ -409,8 +416,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   const advanceToNextQuestion = () => {
-    const nextIdx = currentIndex + 1;
-    if (nextIdx >= tracks.length || (settings.mode === 'classic' && nextIdx >= settings.trackCount)) {
+    const nextIdx = currentIndexRef.current + 1;
+    const currentTracks = tracksRef.current.length > 0 ? tracksRef.current : tracks;
+
+    if (nextIdx >= currentTracks.length || (settings.mode === 'classic' && nextIdx >= settings.trackCount)) {
       finishGameSession();
       return;
     }
@@ -419,8 +428,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       setActivePlayerIndex((activePlayerIndex + 1) % localPlayers.length);
     }
 
+    currentIndexRef.current = nextIdx;
     setCurrentIndex(nextIdx);
-    setupQuestion(nextIdx, tracks, distractorPool);
+    setupQuestion(nextIdx, currentTracks, distractorPool);
   };
 
   const currentTrack = tracks[currentIndex];
