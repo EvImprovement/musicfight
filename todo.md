@@ -1,3 +1,5 @@
-Points corrigés avec succès :
-    - [x] Enregistrement 100% exact des 10 morceaux & du score complet (Corrigé : passage à des références synchrones `scoreRef` et `historyRef` pour éliminer tout retard de mise à jour de l'état React. Les 10 morceaux et la totalité des points sont désormais garantis 100% enregistrés à la fin)
-    - [x] Délai de grâce augmenté à 1.5 seconde (Le score reste au maximum 100 pts pendant 1.5s au début de chaque extrait audio)
+Toutes les fonctionnalités finales appliquées :
+    - [x] Ajustement du score dégressif (Score de 100 à 0 pt sur 10s avec 1.5s de grâce)
+    - [x] Fenêtre modale centrale de révélation (Affichage de "Bonne réponse ! (+85 pts)" ou "Dommage !" avec la pochette de l'album grand format au centre de l'écran)
+    - [x] Bouton Mute réparé et synchronisé (Coupure instantanée du son MP3 Deezer ET des effets sonores Web Audio lors du clic sur le haut-parleur dans la Navbar)
+    - [x] Fenêtre modale d'aide mise à jour avec toutes les règles exactes

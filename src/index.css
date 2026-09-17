@@ -902,12 +902,19 @@ body {
   inset: 0;
   z-index: 250;
   background: rgba(9, 10, 21, 0.85);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  animation: fadeIn 0.2s ease;
+  animation: revealFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity;
+}
+
+@keyframes revealFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .reveal-modal-card {
@@ -921,8 +928,24 @@ body {
   align-items: center;
   gap: 1.5rem;
   text-align: center;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-  animation: popScale 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 25px 65px rgba(0,0,0,0.8);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  animation: revealCardSmoothPop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+@keyframes revealCardSmoothPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.88) translateY(10px);
+  }
+  70% {
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .reveal-modal-card.success {
