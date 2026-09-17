@@ -1,5 +1,6 @@
-Toutes les fonctionnalités finales appliquées :
-    - [x] Ajustement du score dégressif (Score de 100 à 0 pt sur 10s avec 1.5s de grâce)
-    - [x] Fenêtre modale centrale de révélation (Affichage de "Bonne réponse ! (+85 pts)" ou "Dommage !" avec la pochette de l'album grand format au centre de l'écran)
-    - [x] Bouton Mute réparé et synchronisé (Coupure instantanée du son MP3 Deezer ET des effets sonores Web Audio lors du clic sur le haut-parleur dans la Navbar)
-    - [x] Fenêtre modale d'aide mise à jour avec toutes les règles exactes
+MusicFight - Blind Test Musical (Fonctionnel en local) :
+    - [x] Délai de grâce fixé à 0.75 seconde
+    - [x] Morceaux de 10 secondes avec décompte linéaire de 100 à 0 pt
+    - [x] Filtrage 100% thématique et mode artiste 4 titres identiques
+    - [x] Modale centrale de révélation ultra fluide (60fps)
+    - [x] Bouton mute synchronisé & nettoyage automatique des sons au Quitter

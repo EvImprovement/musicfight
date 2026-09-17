@@ -20,7 +20,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
             <Zap className="help-icon text-gold" />
             <div>
               <h4>Score Dégressif Linéaire (100 pts max)</h4>
-              <p>Vous avez <strong>10 secondes</strong> par morceau. Les <strong>1.5 premières secondes</strong> vous conservent 100 points. Ensuite, le score diminue linéairement jusqu'à <strong>0 point à 10s</strong> !</p>
+              <p>Vous avez <strong>10 secondes</strong> par morceau. Les <strong>0.75 première secondes</strong> vous conservent 100 points. Ensuite, le score diminue linéairement jusqu'à <strong>0 point à 10s</strong> !</p>
             </div>
           </div>
 
