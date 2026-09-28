@@ -1,6 +1,20 @@
 import type { Track, CategoryTheme } from '../types/game';
 
-// Preset themes with verified Deezer playlist IDs
+// Clean song title helper to remove clutter like (Remastered...), (Radio Edit...), etc.
+export function cleanSongTitle(title: string): string {
+  if (!title) return '';
+  return title
+    .replace(/\s*\([0-9]{4}\s+Remaster(ed)?\)/gi, '')
+    .replace(/\s*\(Remaster(ed)?(\s+[0-9]{4})?\)/gi, '')
+    .replace(/\s*\[Remaster(ed)?\]/gi, '')
+    .replace(/\s*-\s*(Remastered|Radio Edit|Album Version|Single Version).*/gi, '')
+    .replace(/\s*\(Radio Edit\)/gi, '')
+    .replace(/\s*\(Album Version(\s+Explicit)?\)/gi, '')
+    .replace(/\s*\(Single Version\)/gi, '')
+    .trim();
+}
+
+// Preset themes with verified Deezer playlist IDs for maximum famous tracks
 export const PRESET_THEMES: CategoryTheme[] = [
   {
     id: 'top-france',
@@ -11,79 +25,144 @@ export const PRESET_THEMES: CategoryTheme[] = [
     deezerId: '3155776842',
     query: 'French Hits 2024',
     coverUrl: 'https://images.deezer.com/images/cover/0e9a59b2dcd682705786ba1fa57353f4/250x250.jpg',
-    color: 'linear-gradient(135deg, #ff416c, #ff4b2b)'
+    color: 'linear-gradient(135deg, #ff416c, #ff4b2b)',
+    badge: 'Hits du Moment'
+  },
+  {
+    id: 'white-girl-music',
+    name: 'White Girl Music',
+    description: 'Taylor Swift, Katy Perry, Ke$ha, Carly Rae Jepsen, Miley Cyrus, Britney...',
+    icon: '💅',
+    type: 'playlist',
+    deezerId: '12458795303',
+    secondaryDeezerId: '12334475271',
+    query: 'White Girl Music Hits',
+    color: 'linear-gradient(135deg, #ff007f, #ff758c)',
+    badge: 'Pop Anthems'
+  },
+  {
+    id: 'annees-2010',
+    name: 'Années 2010',
+    description: 'Bruno Mars, Rihanna, Drake, Avicii, Macklemore, The Weeknd, Sia, LMFAO...',
+    icon: '🕶️',
+    type: 'playlist',
+    deezerId: '715215865',
+    secondaryDeezerId: '14917741483',
+    query: '10s Party Hits',
+    color: 'linear-gradient(135deg, #00c6ff, #0072ff)',
+    badge: 'Génération 2010'
+  },
+  {
+    id: 'annees-2000',
+    name: 'Années 2000',
+    description: 'Eminem, 50 Cent, Linkin Park, Black Eyed Peas, Shakira, Usher, Gorillaz...',
+    icon: '💿',
+    type: 'playlist',
+    deezerId: '248297032',
+    secondaryDeezerId: '1977689462',
+    query: '00s Hits',
+    color: 'linear-gradient(135deg, #f857a6, #ff5858)',
+    badge: 'Nostalgie 2000'
+  },
+  {
+    id: 'rap-us',
+    name: 'Rap US',
+    description: 'Eminem, 2Pac, The Notorious B.I.G., 50 Cent, Kendrick Lamar, Travis Scott, Drake...',
+    icon: '👑',
+    type: 'playlist',
+    deezerId: '9771682482',
+    secondaryDeezerId: '10335983602',
+    extraDeezerIds: ['3995638642'],
+    query: 'Rap US Classics',
+    color: 'linear-gradient(135deg, #f7971e, #ffd200)',
+    badge: 'Hip-Hop Legends'
   },
   {
     id: 'rap-fr',
     name: 'Rap Français',
-    description: 'Jul, Ninho, PNL, SCH, Gazo, Damso, Booba...',
+    description: 'Jul, Ninho, PNL, SCH, Gazo, Damso, Booba, NTM, IAM...',
     icon: '🎙️',
     type: 'playlist',
-    deezerId: '6156189524',
+    deezerId: '1999435002',
+    secondaryDeezerId: '6156189524',
     query: 'Rap Francais',
     coverUrl: 'https://images.deezer.com/images/cover/ed1a24d528b9fb6c6f7cbb115682245b/250x250.jpg',
-    color: 'linear-gradient(135deg, #8e2de2, #4a00e0)'
-  },
-  {
-    id: 'pop-80s-90s',
-    name: 'Années 80 & 90',
-    description: 'Les classiques indémodables et hits rétro',
-    icon: '📼',
-    type: 'playlist',
-    deezerId: '1116190041',
-    query: 'Les annees 80 90',
-    coverUrl: 'https://images.deezer.com/images/cover/84ff358eaae626bd3ea671e21b0fbba7/250x250.jpg',
-    color: 'linear-gradient(135deg, #f80759, #bc4e9c)'
-  },
-  {
-    id: 'cinema-anime',
-    name: 'Films & Animes',
-    description: 'Bandes originales de films, séries et animes',
-    icon: '🎬',
-    type: 'playlist',
-    deezerId: '1970220262',
-    query: 'Bande originale de film',
-    color: 'linear-gradient(135deg, #11998e, #38ef7d)'
+    color: 'linear-gradient(135deg, #8e2de2, #4a00e0)',
+    badge: 'Bangers FR'
   },
   {
     id: 'electro-dance',
     name: 'Electro & Dance',
-    description: 'Daft Punk, David Guetta, Avicii, Calvin Harris...',
+    description: 'Avicii, David Guetta, Calvin Harris, Daft Punk, Swedish House Mafia...',
     icon: '⚡',
     type: 'playlist',
-    deezerId: '1410189005',
-    query: 'Electro Dance Hits',
-    color: 'linear-gradient(135deg, #00c6ff, #0072ff)'
+    deezerId: '3264808726',
+    secondaryDeezerId: '11118315824',
+    query: 'EDM Classics',
+    color: 'linear-gradient(135deg, #00f2fe, #4facfe)',
+    badge: 'Club & Festival'
   },
   {
     id: 'rock-classics',
     name: 'Rock & Metal',
-    description: 'Queen, AC/DC, Nirvana, Metallica, Muse...',
+    description: 'Queen, AC/DC, Nirvana, Metallica, Pink Floyd, Muse, Linkin Park...',
     icon: '🎸',
     type: 'playlist',
-    deezerId: '1282483245',
-    query: 'Rock Classics',
-    color: 'linear-gradient(135deg, #f12711, #f5af19)'
+    deezerId: '1306931615',
+    secondaryDeezerId: '1419215845',
+    query: 'Rock Essentials',
+    color: 'linear-gradient(135deg, #f12711, #f5af19)',
+    badge: 'Rock Cultes'
+  },
+  {
+    id: 'pop-80s-90s',
+    name: 'Années 80 & 90',
+    description: 'Michael Jackson, Madonna, Queen, Début de Soirée, Earth Wind & Fire...',
+    icon: '📼',
+    type: 'playlist',
+    deezerId: '1268089951',
+    secondaryDeezerId: '60994846',
+    query: 'Tubes des annees 80',
+    coverUrl: 'https://images.deezer.com/images/cover/84ff358eaae626bd3ea671e21b0fbba7/250x250.jpg',
+    color: 'linear-gradient(135deg, #b224ef, #7579ff)',
+    badge: 'Hits Rétro'
   },
   {
     id: 'disney-hits',
     name: 'Disney & Dessins Animés',
-    description: 'Les chansons mythiques de l\'enfance',
+    description: 'Le Roi Lion, Aladdin, Reine des Neiges, Mulan, Vaiana, Toy Story...',
     icon: '🏰',
     type: 'playlist',
-    deezerId: '1264969245',
-    query: 'Disney Hits',
-    color: 'linear-gradient(135deg, #a8c0ff, #3f2b96)'
+    deezerId: '613860315',
+    secondaryDeezerId: '7548451242',
+    extraDeezerIds: ['11817251201'],
+    query: 'Disney Les Classiques',
+    color: 'linear-gradient(135deg, #a8c0ff, #3f2b96)',
+    badge: 'Magie Disney'
+  },
+  {
+    id: 'cinema-anime',
+    name: 'Films & Séries',
+    description: 'Star Wars, Harry Potter, Skyfall, Titanic, Dirty Dancing, Grease, 8 Mile...',
+    icon: '🎬',
+    type: 'playlist',
+    deezerId: '12964806423',
+    secondaryDeezerId: '18590290',
+    query: 'Bandes originales cultes',
+    color: 'linear-gradient(135deg, #11998e, #38ef7d)',
+    badge: 'B.O. Mythiques'
   },
   {
     id: 'chanson-francaise',
     name: 'Chanson Française',
-    description: 'Goldman, Balavoine, Piaf, Aznavour, Stromae...',
+    description: 'Goldman, Balavoine, Piaf, Aznavour, Stromae, Cabrel, Renaud...',
     icon: '🇫🇷',
     type: 'playlist',
-    deezerId: '1116174141',
-    query: 'Les plus belles chansons francaises',
-    color: 'linear-gradient(135deg, #3a7bd5, #3a6073)'
+    deezerId: '11462021084',
+    secondaryDeezerId: '700895155',
+    query: 'Les 100 plus belles chansons francaises',
+    color: 'linear-gradient(135deg, #3a7bd5, #3a6073)',
+    badge: 'Patrimoine FR'
   }
 ];
 
@@ -108,7 +187,7 @@ async function fetchDeezer(endpoint: string): Promise<any> {
 // Search for artists exclusively on Deezer
 export async function searchArtists(query: string) {
   if (!query.trim()) return [];
-  const data = await fetchDeezer(`/search/artist?q=${encodeURIComponent(query)}&limit=12`);
+  const data = await fetchDeezer(`/search/artist?q=${encodeURIComponent(query)}&limit=16`);
   if (data && data.data) {
     return data.data.map((artist: any) => ({
       id: artist.id,
@@ -123,11 +202,11 @@ export async function searchArtists(query: string) {
 // Search for albums on Deezer
 export async function searchAlbums(query: string) {
   if (!query.trim()) return [];
-  const data = await fetchDeezer(`/search/album?q=${encodeURIComponent(query)}&limit=12`);
+  const data = await fetchDeezer(`/search/album?q=${encodeURIComponent(query)}&limit=16`);
   if (data && data.data) {
     return data.data.map((album: any) => ({
       id: album.id,
-      title: album.title,
+      title: cleanSongTitle(album.title),
       artistName: album.artist?.name || 'Artiste Inconnu',
       cover: album.cover_medium || album.cover_big,
       nb_tracks: album.nb_tracks
@@ -136,15 +215,15 @@ export async function searchAlbums(query: string) {
   return [];
 }
 
-// Fetch tracks for a specific artist strictly from Deezer
+// Fetch tracks for a specific artist strictly from Deezer (loads up to 100 top tracks)
 export async function getArtistTracks(artistId: number | string, artistName: string): Promise<Track[]> {
-  const data = await fetchDeezer(`/artist/${artistId}/top?limit=50`);
+  const data = await fetchDeezer(`/artist/${artistId}/top?limit=100`);
   if (data && data.data) {
     const tracks = filterValidDeezerTracks(data.data, artistName);
     if (tracks.length >= 4) return tracks;
   }
 
-  const searchData = await fetchDeezer(`/search?q=${encodeURIComponent(artistName)}&limit=50`);
+  const searchData = await fetchDeezer(`/search?q=${encodeURIComponent(artistName)}&limit=100`);
   if (searchData && searchData.data) {
     return filterValidDeezerTracks(searchData.data, artistName);
   }
@@ -152,19 +231,19 @@ export async function getArtistTracks(artistId: number | string, artistName: str
   return [];
 }
 
-// Fetch tracks for a specific album strictly from Deezer
+// Fetch tracks for a specific album strictly from Deezer (loads up to 100 tracks)
 export async function getAlbumTracks(albumId: number | string, albumTitle: string, artistName: string, fallbackCoverUrl?: string): Promise<Track[]> {
   const albumDetail = await fetchDeezer(`/album/${albumId}`);
   const albumCoverMedium = albumDetail?.cover_medium || fallbackCoverUrl;
   const albumCoverBig = albumDetail?.cover_big || albumDetail?.cover_xl || albumCoverMedium;
 
-  const data = await fetchDeezer(`/album/${albumId}/tracks?limit=50`);
+  const data = await fetchDeezer(`/album/${albumId}/tracks?limit=100`);
   if (data && data.data) {
     return data.data
       .filter((t: any) => t && t.preview && (t.title_short || t.title))
       .map((t: any) => ({
         id: t.id,
-        title: t.title_short || t.title,
+        title: cleanSongTitle(t.title_short || t.title),
         artist: {
           id: t.artist?.id || '',
           name: t.artist?.name || artistName,
@@ -172,7 +251,7 @@ export async function getAlbumTracks(albumId: number | string, albumTitle: strin
         },
         album: {
           id: albumId,
-          title: albumTitle,
+          title: cleanSongTitle(albumTitle),
           cover_medium: t.album?.cover_medium || albumCoverMedium,
           cover_big: t.album?.cover_big || t.album?.cover_medium || albumCoverBig
         },
@@ -183,56 +262,95 @@ export async function getAlbumTracks(albumId: number | string, albumTitle: strin
   return [];
 }
 
-// Fetch tracks for a playlist strictly from Deezer
+// Fetch tracks for a playlist strictly from Deezer - loads 100-200+ top iconic tracks!
 export async function getPlaylistTracks(theme: CategoryTheme): Promise<Track[]> {
-  let rawData: any[] = [];
+  const allRawData: any[] = [];
 
   if (theme.type === 'chart') {
-    const chartData = await fetchDeezer('/chart/0/tracks?limit=50');
-    if (chartData && chartData.data) rawData = chartData.data;
+    const chartData = await fetchDeezer('/chart/0/tracks?limit=100');
+    if (chartData && chartData.data) {
+      allRawData.push(...chartData.data);
+    }
   }
 
-  if (rawData.length === 0 && theme.deezerId) {
-    const playlistData = await fetchDeezer(`/playlist/${theme.deezerId}/tracks?limit=50`);
-    if (playlistData && playlistData.data) rawData = playlistData.data;
+  const playlistIds = [
+    theme.deezerId,
+    theme.secondaryDeezerId,
+    ...(theme.extraDeezerIds || [])
+  ].filter(Boolean);
+
+  if (playlistIds.length > 0) {
+    const promises = playlistIds.map(async (pid) => {
+      const plData = await fetchDeezer(`/playlist/${pid}/tracks?limit=100`);
+      if (plData && Array.isArray(plData.data)) return plData.data;
+      return [];
+    });
+    const results = await Promise.all(promises);
+    for (const res of results) {
+      allRawData.push(...res);
+    }
   }
 
-  if (rawData.length === 0 && theme.query) {
-    const searchData = await fetchDeezer(`/search?q=${encodeURIComponent(theme.query)}&limit=50`);
-    if (searchData && searchData.data) rawData = searchData.data;
+  if (allRawData.length === 0 && theme.query) {
+    const searchData = await fetchDeezer(`/search?q=${encodeURIComponent(theme.query)}&limit=100`);
+    if (searchData && searchData.data) {
+      allRawData.push(...searchData.data);
+    }
   }
 
-  return filterValidDeezerTracks(rawData);
+  return filterValidDeezerTracks(allRawData);
 }
 
-// Helper to format Deezer tracks & filter items with preview MP3 URLs
+// Helper to format Deezer tracks, filter items with preview MP3 URLs, clean titles & sort by popularity rank!
 function filterValidDeezerTracks(rawList: any[], defaultArtistName?: string): Track[] {
   if (!Array.isArray(rawList)) return [];
 
-  return rawList
-    .filter((t: any) => t && t.preview && (t.title_short || t.title))
-    .map((t: any) => ({
+  const seen = new Set<string>();
+  const validList: (Track & { rank: number })[] = [];
+
+  for (const t of rawList) {
+    if (!t || !t.preview) continue;
+    const rawTitle = t.title_short || t.title;
+    if (!rawTitle) continue;
+
+    const cleanedTitle = cleanSongTitle(rawTitle);
+    const artistName = t.artist?.name || defaultArtistName || 'Artiste Inconnu';
+
+    // Deduplicate by clean artist + title lowercase
+    const key = `${artistName.toLowerCase().trim()}___${cleanedTitle.toLowerCase().trim()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    validList.push({
       id: t.id,
-      title: t.title_short || t.title,
+      title: cleanedTitle,
       artist: {
         id: t.artist?.id || '',
-        name: t.artist?.name || defaultArtistName || 'Artiste Inconnu',
+        name: artistName,
         picture_medium: t.artist?.picture_medium
       },
       album: {
         id: t.album?.id || '',
-        title: t.album?.title || '',
+        title: cleanSongTitle(t.album?.title || ''),
         cover_medium: t.album?.cover_medium,
         cover_big: t.album?.cover_big || t.album?.cover_medium
       },
       preview: t.preview,
-      duration: t.duration || 30
-    }));
+      duration: t.duration || 30,
+      rank: typeof t.rank === 'number' ? t.rank : 0
+    });
+  }
+
+  // Sort by popularity rank descending so the blind test always uses the most well-known, iconic tracks!
+  validList.sort((a, b) => b.rank - a.rank);
+
+  // Return the top tracks (up to 150 well-known songs)
+  return validList.slice(0, 150).map(({ rank, ...track }) => track);
 }
 
-// Fetch general popular tracks on Deezer for extra distractors if needed
+// Fetch general popular tracks on Deezer for extra distractors (100 tracks)
 export async function getGeneralDistractorTracks(): Promise<Track[]> {
-  const chartData = await fetchDeezer('/chart/0/tracks?limit=50');
+  const chartData = await fetchDeezer('/chart/0/tracks?limit=100');
   if (chartData && chartData.data) {
     return filterValidDeezerTracks(chartData.data);
   }

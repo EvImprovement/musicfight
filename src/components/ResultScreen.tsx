@@ -74,7 +74,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
         {/* Header Badge */}
         <div className="result-header">
           <div className="trophy-glow-icon">
-            <Trophy className="icon-lg text-gold" />
+            <img src="/logo.png" alt="MusicFight" className="result-logo-img" />
           </div>
           <h1 className="result-title">Fin de la partie !</h1>
           <div className="rank-badge-box">

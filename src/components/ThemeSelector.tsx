@@ -88,6 +88,9 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme }) =
     <div className="theme-selector-container">
       {/* Hero Welcome Header */}
       <div className="hero-banner">
+        <div className="hero-logo-badge-wrapper">
+          <img src="/logo.png" alt="MusicFight Logo" className="hero-logo-img" />
+        </div>
         <div className="hero-content">
           <span className="hero-badge">
             <Sparkles className="icon-xs" /> Playlists • Artistes • Albums
@@ -137,12 +140,16 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme }) =
               style={{ '--theme-gradient': theme.color } as React.CSSProperties}
             >
               <div className="card-header-bg" style={{ background: theme.color }}>
+                {theme.badge && <span className="theme-card-badge">{theme.badge}</span>}
                 <span className="theme-emoji">{theme.icon}</span>
               </div>
               <div className="card-body">
-                <h3 className="theme-name">{theme.name}</h3>
+                <div className="theme-title-row">
+                  <h3 className="theme-name">{theme.name}</h3>
+                </div>
                 <p className="theme-desc">{theme.description}</p>
                 <div className="card-footer">
+                  <span className="tracks-count-pill">100+ Tubes</span>
                   <span className="play-badge">
                     <Play className="play-icon" /> Jouer
                   </span>

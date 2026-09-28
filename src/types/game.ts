@@ -75,7 +75,10 @@ export interface CategoryTheme {
   icon: string;
   type: 'playlist' | 'artist' | 'chart' | 'album';
   deezerId?: number | string;
+  secondaryDeezerId?: number | string;
+  extraDeezerIds?: (number | string)[];
   query?: string;
   coverUrl?: string;
   color: string;
+  badge?: string;
 }

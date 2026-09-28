@@ -37,7 +37,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenLeaderboard, onOpenHelp, o
         {/* Logo */}
         <div className="navbar-brand" onClick={onHomeClick} role="button" tabIndex={0}>
           <div className="logo-icon-wrapper">
-            <Music className="logo-icon" />
+            <img
+              src="/logo.png"
+              alt="MusicFight"
+              className="logo-img"
+              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+            />
+            <Music className="logo-icon fallback-icon" />
           </div>
           <div className="brand-text">
             <span className="brand-title">Music<span className="brand-highlight">Fight</span></span>

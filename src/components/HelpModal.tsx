@@ -13,7 +13,10 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
           <X className="icon-sm" />
         </button>
 
-        <h2 className="modal-title">📖 Comment jouer à MusicFight ?</h2>
+        <div className="help-header-row">
+          <img src="/logo.png" alt="MusicFight" className="modal-logo-img" />
+          <h2 className="modal-title">Comment jouer à MusicFight ?</h2>
+        </div>
 
         <div className="help-content">
           <div className="help-item">
