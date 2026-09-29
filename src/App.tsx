@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { ThemeSelector } from './components/ThemeSelector';
 import { GameModeModal } from './components/GameModeModal';
@@ -7,11 +7,27 @@ import { ResultScreen } from './components/ResultScreen';
 import { Leaderboard } from './components/Leaderboard';
 import { HelpModal } from './components/HelpModal';
 import { AuthModal } from './components/AuthModal';
+import { MultiplayerHub } from './components/MultiplayerHub';
+import { MultiplayerLobby } from './components/MultiplayerLobby';
+import { MultiplayerGameBoard } from './components/MultiplayerGameBoard';
+import { MultiplayerPodium } from './components/MultiplayerPodium';
 import { getStoredPlayerProfile } from './services/supabaseClient';
-import type { CategoryTheme, GameSettings, GameStats, LocalPlayerState } from './types/game';
+import { connectToMultiplayerRoom } from './services/multiplayerRoom';
+import type { MultiplayerRoomManager } from './services/multiplayerRoom';
+import type {
+  CategoryTheme,
+  GameSettings,
+  GameStats,
+  LocalPlayerState,
+  RoomPlayer,
+  RoomSettings,
+  Track
+} from './types/game';
 
 export const App: React.FC = () => {
-  const [view, setView] = useState<'selector' | 'game' | 'result'>('selector');
+  const [view, setView] = useState<
+    'selector' | 'game' | 'result' | 'room_lobby' | 'room_game' | 'room_podium'
+  >('selector');
   const [selectedTheme, setSelectedTheme] = useState<CategoryTheme | null>(null);
   const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
@@ -22,6 +38,28 @@ export const App: React.FC = () => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isGameModeModalOpen, setIsGameModeModalOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  // Multiplayer Rooms state
+  const [isMultiplayerHubOpen, setIsMultiplayerHubOpen] = useState(false);
+  const [initialRoomCode, setInitialRoomCode] = useState('');
+  const [roomManager, setRoomManager] = useState<MultiplayerRoomManager | null>(null);
+  const [roomPlayers, setRoomPlayers] = useState<RoomPlayer[]>([]);
+  const [roomSettings, setRoomSettings] = useState<RoomSettings | null>(null);
+  const [roomTracks, setRoomTracks] = useState<Track[]>([]);
+  const [roomDistractorPool, setRoomDistractorPool] = useState<Track[]>([]);
+  const [roomFinalPlayers, setRoomFinalPlayers] = useState<RoomPlayer[]>([]);
+
+  // Check URL query parameters for invite links (e.g. ?room=MF-482)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('room');
+      if (code) {
+        setInitialRoomCode(code.toUpperCase().trim());
+        setIsMultiplayerHubOpen(true);
+      }
+    } catch (_) {}
+  }, []);
 
   const handleSelectTheme = (theme: CategoryTheme) => {
     setSelectedTheme(theme);
@@ -49,9 +87,74 @@ export const App: React.FC = () => {
   };
 
   const handleGoHome = () => {
+    if (roomManager) {
+      roomManager.leaveRoom();
+      setRoomManager(null);
+    }
     setSelectedTheme(null);
     setGameSettings(null);
     setGameStats(null);
+    setView('selector');
+  };
+
+  // Connect to a multiplayer room (as Host or Guest)
+  const handleJoinMultiplayerRoom = async (
+    roomCode: string,
+    playerName: string,
+    avatar: string,
+    isHost: boolean
+  ) => {
+    const mgr = await connectToMultiplayerRoom({
+      roomCode,
+      name: playerName,
+      avatar,
+      isHost,
+      onPlayersChange: (updatedPlayers) => {
+        setRoomPlayers(updatedPlayers);
+      },
+      onEvent: (event) => {
+        if (event.type === 'GAME_STARTING') {
+          setRoomSettings(event.settings);
+          setRoomTracks(event.tracks);
+          setRoomDistractorPool(event.distractorPool);
+          setView('room_game');
+        } else if (event.type === 'RETURN_TO_LOBBY') {
+          setView('room_lobby');
+        } else if (event.type === 'SETTINGS_UPDATE') {
+          setRoomSettings(event.settings);
+        }
+      }
+    });
+
+    if (mgr) {
+      setRoomManager(mgr);
+      setIsMultiplayerHubOpen(false);
+      setView('room_lobby');
+    }
+  };
+
+  // Host launches game from Lobby
+  const handleHostStartRoomGame = (
+    settings: RoomSettings,
+    tracks: Track[],
+    distractorPool: Track[]
+  ) => {
+    setRoomSettings(settings);
+    setRoomTracks(tracks);
+    setRoomDistractorPool(distractorPool);
+    setView('room_game');
+  };
+
+  const handleRoomFinishGame = (finalPlayers: RoomPlayer[]) => {
+    setRoomFinalPlayers(finalPlayers);
+    setView('room_podium');
+  };
+
+  const handleLeaveRoom = () => {
+    if (roomManager) {
+      roomManager.leaveRoom();
+      setRoomManager(null);
+    }
     setView('selector');
   };
 
@@ -62,11 +165,15 @@ export const App: React.FC = () => {
         onOpenHelp={() => setIsHelpOpen(true)}
         onHomeClick={handleGoHome}
         onOpenAuth={() => setIsAuthOpen(true)}
+        onOpenMultiplayer={() => setIsMultiplayerHubOpen(true)}
       />
 
       <main className="main-content">
         {view === 'selector' && (
-          <ThemeSelector onSelectTheme={handleSelectTheme} />
+          <ThemeSelector
+            onSelectTheme={handleSelectTheme}
+            onOpenMultiplayer={() => setIsMultiplayerHubOpen(true)}
+          />
         )}
 
         {view === 'game' && selectedTheme && gameSettings && (
@@ -89,6 +196,39 @@ export const App: React.FC = () => {
             onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
           />
         )}
+
+        {/* MULTIPLAYER ROOM VIEWS */}
+        {view === 'room_lobby' && roomManager && (
+          <MultiplayerLobby
+            manager={roomManager}
+            players={roomPlayers}
+            initialSettings={roomSettings || undefined}
+            onStartGame={handleHostStartRoomGame}
+            onLeaveRoom={handleLeaveRoom}
+          />
+        )}
+
+        {view === 'room_game' && roomManager && roomSettings && (
+          <MultiplayerGameBoard
+            manager={roomManager}
+            settings={roomSettings}
+            tracks={roomTracks}
+            distractorPool={roomDistractorPool}
+            players={roomPlayers}
+            onFinishGame={handleRoomFinishGame}
+            onQuitGame={handleLeaveRoom}
+          />
+        )}
+
+        {view === 'room_podium' && roomManager && roomSettings && (
+          <MultiplayerPodium
+            manager={roomManager}
+            settings={roomSettings}
+            finalPlayers={roomFinalPlayers.length > 0 ? roomFinalPlayers : roomPlayers}
+            onPlayAgain={() => setView('room_lobby')}
+            onQuit={handleLeaveRoom}
+          />
+        )}
       </main>
 
       {/* Modals */}
@@ -108,14 +248,25 @@ export const App: React.FC = () => {
         <HelpModal onClose={() => setIsHelpOpen(false)} />
       )}
 
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onAuthSuccess={() => {
-          setIsAuthOpen(false);
-        }}
-        canDismiss={!!getStoredPlayerProfile()}
-      />
+      {isAuthOpen && (
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          onAuthSuccess={() => {
+            setIsAuthOpen(false);
+          }}
+          canDismiss={!!getStoredPlayerProfile()}
+        />
+      )}
+
+      {/* Multiplayer Hub Modal */}
+      {isMultiplayerHubOpen && (
+        <MultiplayerHub
+          initialCode={initialRoomCode}
+          onClose={() => setIsMultiplayerHubOpen(false)}
+          onJoinRoom={handleJoinMultiplayerRoom}
+        />
+      )}
     </div>
   );
 };

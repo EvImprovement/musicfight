@@ -83,3 +83,38 @@ export interface CategoryTheme {
   color: string;
   badge?: string;
 }
+
+export interface RoomPlayer {
+  id: string;
+  name: string;
+  isHost: boolean;
+  score: number;
+  streak: number;
+  avatar: string;
+  isReady?: boolean;
+  isLockedOut?: boolean;
+  lastPoints?: number;
+}
+
+export type RoomGameplayMode = 'buzzer' | 'everyone';
+
+export interface RoomSettings {
+  themeId: string;
+  themeName: string;
+  themeIcon: string;
+  themeColor: string;
+  trackCount: number;
+  timePerTrack: number;
+  gameplayMode: RoomGameplayMode;
+}
+
+export type RoomBroadcastEvent =
+  | { type: 'SETTINGS_UPDATE'; settings: RoomSettings }
+  | { type: 'GAME_STARTING'; settings: RoomSettings; tracks: Track[]; distractorPool: Track[]; startTimestamp: number }
+  | { type: 'QUESTION_START'; questionIndex: number; startTime: number; correctOptionId: string | number; options: Option[] }
+  | { type: 'PLAYER_BUZZ'; playerId: string; playerName: string; optionId: string | number; responseTimeMs: number }
+  | { type: 'ROUND_RESULT'; winnerPlayerId?: string; winnerName?: string; pointsGained: number; correctOption: Option; track: Track; updatedScores: Record<string, number> }
+  | { type: 'SHOW_SCOREBOARD'; updatedScores: Record<string, number> }
+  | { type: 'GAME_OVER'; finalRankings: RoomPlayer[] }
+  | { type: 'RETURN_TO_LOBBY' };
+

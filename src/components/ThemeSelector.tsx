@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Music2, Sparkles, Disc, Loader2, Play, Library } from 'lucide-react';
+import { Search, Music2, Sparkles, Disc, Loader2, Play, Library, Users } from 'lucide-react';
 import { PRESET_THEMES, searchArtists, searchAlbums } from '../services/deezerApi';
 import type { CategoryTheme } from '../types/game';
 
 interface ThemeSelectorProps {
   onSelectTheme: (theme: CategoryTheme) => void;
+  onOpenMultiplayer?: () => void;
 }
 
-export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme }) => {
+export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme, onOpenMultiplayer }) => {
   const [activeTab, setActiveTab] = useState<'themes' | 'search' | 'albums'>('themes');
   
   // Artist search
@@ -101,6 +102,26 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme }) =
           </p>
         </div>
       </div>
+
+      {/* Live Multiplayer Banner */}
+      {onOpenMultiplayer && (
+        <div className="multiplayer-banner" onClick={onOpenMultiplayer} role="button" tabIndex={0}>
+          <div className="multiplayer-banner-content">
+            <div className="multiplayer-badge-live">
+              <span className="pulse-dot" /> NOUVEAU • SALONS PRIVÉS
+            </div>
+            <h3 className="multiplayer-banner-title">
+              <Users className="icon-sm text-pink" /> Jouez en direct avec vos amis !
+            </h3>
+            <p className="multiplayer-banner-desc">
+              Créez un salon avec un code ou rejoignez vos proches en temps réel (Buzzer & synchronisation sonore).
+            </p>
+          </div>
+          <button className="btn-primary multiplayer-banner-btn" onClick={(e) => { e.stopPropagation(); onOpenMultiplayer(); }}>
+            <Users className="icon-sm" /> Créer / Rejoindre
+          </button>
+        </div>
+      )}
 
       {/* Mode Navigation Tabs */}
       <div className="selector-tabs">

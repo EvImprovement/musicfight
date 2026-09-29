@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, Trophy, User, Music, HelpCircle } from 'lucide-react';
+import { Volume2, VolumeX, Trophy, User, Music, HelpCircle, Users } from 'lucide-react';
 import { soundFx } from '../services/soundEffects';
 import { getStoredPlayerProfile } from '../services/supabaseClient';
 
@@ -8,13 +8,15 @@ interface NavbarProps {
   onOpenHelp: () => void;
   onHomeClick: () => void;
   onOpenAuth: () => void;
+  onOpenMultiplayer: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenLeaderboard,
   onOpenHelp,
   onHomeClick,
-  onOpenAuth
+  onOpenAuth,
+  onOpenMultiplayer
 }) => {
   const [isMuted, setIsMuted] = useState(soundFx.getMuted());
   const profile = getStoredPlayerProfile();
@@ -56,6 +58,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <User className="icon-sm text-cyan" />
             {profile && <span className="profile-status-dot" />}
+          </button>
+
+          {/* Multiplayer Room Button */}
+          <button
+            onClick={onOpenMultiplayer}
+            className="nav-btn btn-secondary room-nav-btn"
+            title="Salons Privés Multi-joueurs"
+          >
+            <Users className="icon-sm text-pink" />
+            <span className="btn-label">Salons</span>
           </button>
 
           {/* Leaderboard Button */}
