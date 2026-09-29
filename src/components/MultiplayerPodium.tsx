@@ -24,7 +24,7 @@ export const MultiplayerPodium: React.FC<MultiplayerPodiumProps> = ({
   const second = sorted[1];
   const third = sorted[2];
   const myPlayerId = manager.myPlayerId;
-  const isHost = manager.isHost;
+  const isHost = manager.isHost || !!finalPlayers.find(p => p.id === manager.myPlayerId)?.isHost;
 
   useEffect(() => {
     // Launch celebratory confetti

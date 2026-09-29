@@ -5,7 +5,7 @@ import { calculateQuestionScore } from '../utils/scoreCalculator';
 import { soundFx } from '../services/soundEffects';
 import { AudioVisualizer } from './AudioVisualizer';
 import { QuestionCard } from './QuestionCard';
-import { CheckCircle2, XCircle, Clock, Volume2, Trophy, Flame, LogOut } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Volume2, Trophy, Flame, LogOut, Users } from 'lucide-react';
 
 interface MultiplayerGameBoardProps {
   manager: MultiplayerRoomManager;
@@ -26,13 +26,16 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
   onFinishGame,
   onQuitGame
 }) => {
-  const [players, setPlayers] = useState<RoomPlayer[]>(initialPlayers);
+  // Initialize players with 0 score for fresh round
+  const [players, setPlayers] = useState<RoomPlayer[]>(() =>
+    initialPlayers.map(p => ({ ...p, score: 0, streak: 0, lastPoints: 0 }))
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentOptions, setCurrentOptions] = useState<Option[]>([]);
-  const [correctOption, setCorrectOption] = useState<Option | null>(null);
+  const [_correctOption, setCorrectOption] = useState<Option | null>(null);
 
   // Round states
-  const [countdown, setCountdown] = useState<number | null>(3); // 3, 2, 1, GO
+  const [countdown, setCountdown] = useState<number | null>(3); // 3... 2... 1... GO!
   const [timeRemaining, setTimeRemaining] = useState(settings.timePerTrack || 10);
   const [stage, setStage] = useState<'countdown' | 'question' | 'reveal' | 'scoreboard'>('countdown');
 
@@ -44,18 +47,51 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isAudioBlocked, setIsAudioBlocked] = useState(false);
 
-  // Audio refs & intervals
+  // Audio refs & timers
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const questionStartTimeRef = useRef<number>(0);
   const trackTimerIntervalRef = useRef<number | null>(null);
   const countdownIntervalRef = useRef<number | null>(null);
 
-  const isHost = manager.isHost;
+  // Stable references for async callbacks & network events
+  const hasStartedGameRef = useRef(false);
+  const currentIndexRef = useRef(0);
+  const stageRef = useRef<'countdown' | 'question' | 'reveal' | 'scoreboard'>('countdown');
+  const correctOptionRef = useRef<Option | null>(null);
+  const currentTrackRef = useRef<Track | null>(tracks[0] || null);
+  const playersRef = useRef<RoomPlayer[]>(players);
+
   const myPlayerId = manager.myPlayerId;
   const currentTrack = tracks[currentIndex];
 
+  // Keep playersRef synchronized
+  useEffect(() => {
+    playersRef.current = players;
+  }, [players]);
+
+  // Sync presence updates (e.g. if player leaves/joins) without losing scores
+  useEffect(() => {
+    setPlayers(prev => {
+      const merged = initialPlayers.map(initP => {
+        const existing = prev.find(p => p.id === initP.id);
+        if (existing) {
+          return {
+            ...initP,
+            score: existing.score,
+            streak: existing.streak,
+            lastPoints: existing.lastPoints
+          };
+        }
+        return { ...initP, score: 0, streak: 0, lastPoints: 0 };
+      });
+      const sorted = merged.sort((a, b) => b.score - a.score);
+      playersRef.current = sorted;
+      return sorted;
+    });
+  }, [initialPlayers]);
+
   // Helper to sync scores across players
-  const updatePlayerScore = (playerId: string, points: number, correct: boolean) => {
+  const updatePlayerScore = useCallback((playerId: string, points: number, correct: boolean) => {
     setPlayers(prev => {
       const updated = prev.map(p => {
         if (p.id === playerId) {
@@ -65,9 +101,11 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
         }
         return p;
       });
-      return updated.sort((a, b) => b.score - a.score);
+      const sorted = updated.sort((a, b) => b.score - a.score);
+      playersRef.current = sorted;
+      return sorted;
     });
-  };
+  }, []);
 
   // Preload track cover image for instant reveal
   useEffect(() => {
@@ -90,21 +128,182 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
     }
   }, [currentIndex, currentTrack, tracks]);
 
-  // Host starts a question
+  const playAudio = useCallback(() => {
+    if (audioRef.current) {
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          setIsPlayingAudio(true);
+          setIsAudioBlocked(false);
+        }).catch(() => {
+          setIsAudioBlocked(true);
+        });
+      }
+    }
+  }, []);
+
+  // Start question countdown on devices
+  const handleStartQuestionLocally = useCallback((
+    index: number,
+    options: Option[],
+    correct: Option,
+    startTime: number
+  ) => {
+    // Clear any previous countdown/question intervals
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    if (trackTimerIntervalRef.current) {
+      clearInterval(trackTimerIntervalRef.current);
+      trackTimerIntervalRef.current = null;
+    }
+
+    setCurrentIndex(index);
+    currentIndexRef.current = index;
+
+    setCurrentOptions(options);
+    setCorrectOption(correct);
+    correctOptionRef.current = correct;
+
+    setSelectedOption(null);
+    setIsLockedOut(false);
+    setRoundWinner(null);
+
+    setStage('countdown');
+    stageRef.current = 'countdown';
+    setCountdown(3);
+
+    const track = tracks[index];
+    currentTrackRef.current = track || null;
+
+    // Preload audio into memory so it starts instantly when countdown hits 0
+    if (audioRef.current && track?.preview) {
+      const audio = audioRef.current;
+      audio.pause();
+      audio.src = track.preview;
+      audio.currentTime = 0;
+      audio.volume = 1.0;
+      audio.muted = soundFx.getMuted();
+      audio.load();
+    }
+
+    // Synchronized countdown loop (3... 2... 1... GO!)
+    const updateCountdown = () => {
+      const remainingMs = startTime - Date.now();
+      if (remainingMs <= 100) {
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        }
+        setCountdown(null);
+        setStage('question');
+        stageRef.current = 'question';
+        questionStartTimeRef.current = Date.now();
+        playAudio();
+        startQuestionTimer();
+      } else {
+        // Clamped between 1 and 3 so 4 is never shown
+        const sec = Math.min(3, Math.max(1, Math.ceil(remainingMs / 1000)));
+        setCountdown(sec);
+      }
+    };
+
+    updateCountdown();
+    countdownIntervalRef.current = window.setInterval(updateCountdown, 100);
+  }, [tracks, playAudio]);
+
+  const startQuestionTimer = useCallback(() => {
+    const totalTime = settings.timePerTrack || 10;
+    setTimeRemaining(totalTime);
+
+    if (trackTimerIntervalRef.current) {
+      clearInterval(trackTimerIntervalRef.current);
+      trackTimerIntervalRef.current = null;
+    }
+
+    trackTimerIntervalRef.current = window.setInterval(() => {
+      const elapsed = (Date.now() - questionStartTimeRef.current) / 1000;
+      const remaining = Math.max(0, totalTime - elapsed);
+      setTimeRemaining(remaining);
+
+      if (remaining <= 0) {
+        if (trackTimerIntervalRef.current) {
+          clearInterval(trackTimerIntervalRef.current);
+          trackTimerIntervalRef.current = null;
+        }
+        handleTimeout();
+      }
+    }, 100);
+  }, [settings.timePerTrack]);
+
+  const triggerReveal = useCallback((
+    winner: { id: string; name: string; points: number } | null,
+    _points: number,
+    correctOpt: Option,
+    _track: Track
+  ) => {
+    if (trackTimerIntervalRef.current) {
+      clearInterval(trackTimerIntervalRef.current);
+      trackTimerIntervalRef.current = null;
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setIsPlayingAudio(false);
+
+    setRoundWinner(winner);
+    setCorrectOption(correctOpt);
+    correctOptionRef.current = correctOpt;
+    setStage('reveal');
+    stageRef.current = 'reveal';
+
+    // After 2.6 seconds, show scoreboard
+    setTimeout(() => {
+      setStage('scoreboard');
+      stageRef.current = 'scoreboard';
+
+      // After 3 seconds of scoreboard, Host advances to next question
+      if (manager.isHost) {
+        setTimeout(() => {
+          const nextIndex = currentIndexRef.current + 1;
+          startQuestionRound(nextIndex);
+        }, 3000);
+      }
+    }, 2600);
+  }, [manager]);
+
+  const handleTimeout = useCallback(() => {
+    if (audioRef.current) audioRef.current.pause();
+    setIsPlayingAudio(false);
+
+    if (manager.isHost && correctOptionRef.current && currentTrackRef.current) {
+      manager.sendEvent({
+        type: 'ROUND_RESULT',
+        pointsGained: 0,
+        correctOption: correctOptionRef.current,
+        track: currentTrackRef.current,
+        updatedScores: {}
+      });
+      triggerReveal(null, 0, correctOptionRef.current, currentTrackRef.current);
+    }
+  }, [manager, triggerReveal]);
+
+  // Host starts a question round
   const startQuestionRound = useCallback((index: number) => {
     if (index >= tracks.length) {
       manager.sendEvent({
         type: 'GAME_OVER',
-        finalRankings: players
+        finalRankings: playersRef.current
       });
-      onFinishGame(players);
+      onFinishGame(playersRef.current);
       return;
     }
 
     const track = tracks[index];
     if (!track) return;
 
-    // Pick 3 distractors
+    // Pick 3 distractors from pool
     const otherTracks = distractorPool.filter(t => t.id !== track.id && t.title !== track.title);
     const shuffledOthers = [...otherTracks].sort(() => Math.random() - 0.5).slice(0, 3);
 
@@ -123,7 +322,7 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
     }));
 
     const options = [correctOpt, ...distractorOpts].sort(() => Math.random() - 0.5);
-    const startTime = Date.now() + 3200; // 3.2s synchronized countdown
+    const startTime = Date.now() + 3000; // 3.0s synchronized countdown
 
     manager.sendEvent({
       type: 'QUESTION_START',
@@ -134,111 +333,98 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
     });
 
     handleStartQuestionLocally(index, options, correctOpt, startTime);
-  }, [tracks, distractorPool, manager, players, onFinishGame]);
+  }, [tracks, distractorPool, manager, onFinishGame, handleStartQuestionLocally]);
 
-  const handleStartQuestionLocally = (
-    index: number,
-    options: Option[],
-    correct: Option,
-    startTime: number
-  ) => {
-    setCurrentIndex(index);
-    setCurrentOptions(options);
-    setCorrectOption(correct);
-    setSelectedOption(null);
-    setIsLockedOut(false);
-    setRoundWinner(null);
-    setStage('countdown');
-
-    const track = tracks[index];
-
-    // Preload audio
-    if (audioRef.current && track) {
-      const audio = audioRef.current;
-      audio.pause();
-      audio.src = track.preview;
-      audio.currentTime = 0;
-      audio.volume = 1.0;
-      audio.muted = soundFx.getMuted();
+  // Host initiates first round ONCE on mount
+  useEffect(() => {
+    if (manager.isHost && !hasStartedGameRef.current && tracks.length > 0) {
+      hasStartedGameRef.current = true;
+      const initTimer = setTimeout(() => {
+        startQuestionRound(0);
+      }, 500);
+      return () => clearTimeout(initTimer);
     }
+  }, [manager.isHost, tracks.length, startQuestionRound]);
 
-    // Synchronized countdown
-    const updateCountdown = () => {
-      const remainingMs = startTime - Date.now();
-      if (remainingMs <= 200) {
-        if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-        setCountdown(null);
-        setStage('question');
-        questionStartTimeRef.current = Date.now();
-        playAudio();
-        startQuestionTimer();
-      } else {
-        const sec = Math.ceil(remainingMs / 1000);
-        setCountdown(sec);
+  // Listen to network events from room
+  useEffect(() => {
+    const handleEvent = (event: RoomBroadcastEvent) => {
+      switch (event.type) {
+        case 'QUESTION_START':
+          handleStartQuestionLocally(
+            event.questionIndex,
+            event.options,
+            { id: event.correctOptionId, title: '', artistName: '', isTrackTitle: true },
+            event.startTime
+          );
+          break;
+
+        case 'PLAYER_BUZZ':
+          if (manager.isHost && correctOptionRef.current && currentTrackRef.current && stageRef.current === 'question') {
+            const isCorrect = event.optionId === correctOptionRef.current.id;
+            if (isCorrect) {
+              const scoreCalc = calculateQuestionScore(event.responseTimeMs / 1000);
+              const points = scoreCalc.finalPoints;
+              updatePlayerScore(event.playerId, points, true);
+
+              manager.sendEvent({
+                type: 'ROUND_RESULT',
+                winnerPlayerId: event.playerId,
+                winnerName: event.playerName,
+                pointsGained: points,
+                correctOption: correctOptionRef.current,
+                track: currentTrackRef.current,
+                updatedScores: {}
+              });
+
+              triggerReveal(
+                { id: event.playerId, name: event.playerName, points },
+                points,
+                correctOptionRef.current,
+                currentTrackRef.current
+              );
+            }
+          }
+          break;
+
+        case 'ROUND_RESULT':
+          // Guests update state from host broadcast
+          if (!manager.isHost) {
+            if (event.winnerPlayerId) {
+              updatePlayerScore(event.winnerPlayerId, event.pointsGained, true);
+            }
+            triggerReveal(
+              event.winnerPlayerId ? { id: event.winnerPlayerId, name: event.winnerName || 'Joueur', points: event.pointsGained } : null,
+              event.pointsGained,
+              event.correctOption,
+              event.track
+            );
+          }
+          break;
+
+        case 'GAME_OVER':
+          onFinishGame(event.finalRankings || playersRef.current);
+          break;
       }
     };
 
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    countdownIntervalRef.current = window.setInterval(updateCountdown, 100);
-  };
-
-  const playAudio = () => {
-    if (audioRef.current) {
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          setIsPlayingAudio(true);
-          setIsAudioBlocked(false);
-        }).catch(() => {
-          setIsAudioBlocked(true);
-        });
-      }
-    }
-  };
-
-  const startQuestionTimer = () => {
-    setTimeRemaining(settings.timePerTrack);
-    if (trackTimerIntervalRef.current) clearInterval(trackTimerIntervalRef.current);
-
-    trackTimerIntervalRef.current = window.setInterval(() => {
-      const elapsed = (Date.now() - questionStartTimeRef.current) / 1000;
-      const remaining = Math.max(0, settings.timePerTrack - elapsed);
-      setTimeRemaining(remaining);
-
-      if (remaining <= 0) {
-        if (trackTimerIntervalRef.current) clearInterval(trackTimerIntervalRef.current);
-        handleTimeout();
-      }
-    }, 100);
-  };
-
-  const handleTimeout = () => {
-    if (audioRef.current) audioRef.current.pause();
-    setIsPlayingAudio(false);
-
-    if (isHost && correctOption && currentTrack) {
-      manager.sendEvent({
-        type: 'ROUND_RESULT',
-        pointsGained: 0,
-        correctOption,
-        track: currentTrack,
-        updatedScores: {}
-      });
-      triggerReveal(null, 0, correctOption, currentTrack);
-    }
-  };
+    const unsubscribe = manager.subscribeEvents(handleEvent);
+    return () => {
+      unsubscribe();
+    };
+  }, [manager, handleStartQuestionLocally, triggerReveal, updatePlayerScore, onFinishGame]);
 
   // Player clicks an option
   const handleSelectOption = (option: Option) => {
-    if (stage !== 'question' || isLockedOut || selectedOption || !correctOption) return;
+    if (stageRef.current !== 'question' || isLockedOut || selectedOption || !correctOptionRef.current) return;
 
     setSelectedOption(option);
     const responseTime = Date.now() - questionStartTimeRef.current;
-    const isCorrect = option.id === correctOption.id;
+    const isCorrect = option.id === correctOptionRef.current.id;
+    const myPlayerName = playersRef.current.find(p => p.id === myPlayerId)?.name || 'Moi';
 
     if (settings.gameplayMode === 'buzzer') {
       if (isCorrect) {
-        // Player found it first!
         soundFx.playCorrectSound();
         const scoreCalc = calculateQuestionScore(responseTime / 1000);
         const points = scoreCalc.finalPoints;
@@ -250,23 +436,23 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
         manager.sendEvent({
           type: 'PLAYER_BUZZ',
           playerId: myPlayerId,
-          playerName: manager.myPlayerId,
+          playerName: myPlayerName,
           optionId: option.id,
           responseTimeMs: responseTime
         });
 
-        if (isHost && currentTrack) {
+        if (manager.isHost && currentTrackRef.current) {
           updatePlayerScore(myPlayerId, points, true);
           manager.sendEvent({
             type: 'ROUND_RESULT',
             winnerPlayerId: myPlayerId,
-            winnerName: players.find(p => p.id === myPlayerId)?.name || 'Moi',
+            winnerName: myPlayerName,
             pointsGained: points,
-            correctOption,
-            track: currentTrack,
+            correctOption: correctOptionRef.current,
+            track: currentTrackRef.current,
             updatedScores: {}
           });
-          triggerReveal({ id: myPlayerId, name: 'Moi', points }, points, correctOption, currentTrack);
+          triggerReveal({ id: myPlayerId, name: myPlayerName, points }, points, correctOptionRef.current, currentTrackRef.current);
         }
       } else {
         // Wrong buzzer! Lock player out so other players can continue
@@ -285,102 +471,7 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
     }
   };
 
-  const triggerReveal = (
-    winner: { id: string; name: string; points: number } | null,
-    _points: number,
-    correctOpt: Option,
-    _track: Track
-  ) => {
-    if (trackTimerIntervalRef.current) clearInterval(trackTimerIntervalRef.current);
-    if (audioRef.current) audioRef.current.pause();
-    setIsPlayingAudio(false);
-
-    setRoundWinner(winner);
-    setCorrectOption(correctOpt);
-    setStage('reveal');
-
-    // After 2.6 seconds, show scoreboard
-    setTimeout(() => {
-      setStage('scoreboard');
-      // After 3 seconds of scoreboard, advance to next question
-      if (isHost) {
-        setTimeout(() => {
-          startQuestionRound(currentIndex + 1);
-        }, 3200);
-      }
-    }, 2800);
-  };
-
-  // Listen to network events from room
-  useEffect(() => {
-    const handleEvent = (event: RoomBroadcastEvent) => {
-      switch (event.type) {
-        case 'QUESTION_START':
-          handleStartQuestionLocally(
-            event.questionIndex,
-            event.options,
-            { id: event.correctOptionId, title: '', artistName: '', isTrackTitle: true },
-            event.startTime
-          );
-          break;
-
-        case 'PLAYER_BUZZ':
-          if (isHost && correctOption && currentTrack && stage === 'question') {
-            const isCorrect = event.optionId === correctOption.id;
-            if (isCorrect) {
-              const scoreCalc = calculateQuestionScore(event.responseTimeMs / 1000);
-              const points = scoreCalc.finalPoints;
-              updatePlayerScore(event.playerId, points, true);
-
-              manager.sendEvent({
-                type: 'ROUND_RESULT',
-                winnerPlayerId: event.playerId,
-                winnerName: event.playerName,
-                pointsGained: points,
-                correctOption,
-                track: currentTrack,
-                updatedScores: {}
-              });
-
-              triggerReveal({ id: event.playerId, name: event.playerName, points }, points, correctOption, currentTrack);
-            }
-          }
-          break;
-
-        case 'ROUND_RESULT':
-          triggerReveal(
-            event.winnerPlayerId ? { id: event.winnerPlayerId, name: event.winnerName || 'Joueur', points: event.pointsGained } : null,
-            event.pointsGained,
-            event.correctOption,
-            event.track
-          );
-          if (event.winnerPlayerId) {
-            updatePlayerScore(event.winnerPlayerId, event.pointsGained, true);
-          }
-          break;
-
-        case 'GAME_OVER':
-          onFinishGame(event.finalRankings || players);
-          break;
-      }
-    };
-
-    // Attach event listener via room manager
-    const originalChannel = manager.channel;
-    originalChannel.on('broadcast', { event: 'ROOM_EVENT' }, (envelope: any) => {
-      if (envelope?.payload) handleEvent(envelope.payload);
-    });
-
-    // If host, start first round on mount
-    if (isHost && currentIndex === 0 && stage === 'countdown' && tracks.length > 0) {
-      const initTimer = setTimeout(() => {
-        startQuestionRound(0);
-      }, 500);
-      return () => clearTimeout(initTimer);
-    }
-  }, [isHost, correctOption, currentTrack, stage, currentIndex, tracks, manager, players, onFinishGame]);
-
-  // Clean up
+  // Clean up timers & audio on unmount
   useEffect(() => {
     return () => {
       if (trackTimerIntervalRef.current) clearInterval(trackTimerIntervalRef.current);
@@ -426,6 +517,14 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Solo Notice if other players left */}
+      {players.length <= 1 && (
+        <div style={{ textAlign: 'center', padding: '0.35rem', background: 'rgba(239,68,68,0.15)', color: '#f87171', borderRadius: '8px', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+          <Users className="icon-xs" style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+          Les autres joueurs ont quitté le salon.
+        </div>
+      )}
 
       {/* STAGE 1: COUNTDOWN 3... 2... 1... GO! */}
       {stage === 'countdown' && (
@@ -476,7 +575,7 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
               <div className="decay-progress-bg">
                 <div
                   className="decay-progress-fill"
-                  style={{ width: `${(timeRemaining / settings.timePerTrack) * 100}%` }}
+                  style={{ width: `${(timeRemaining / (settings.timePerTrack || 10)) * 100}%` }}
                 />
               </div>
             </div>

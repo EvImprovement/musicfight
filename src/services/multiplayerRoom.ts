@@ -37,6 +37,7 @@ export interface MultiplayerRoomManager {
   sendEvent: (event: RoomBroadcastEvent) => Promise<void>;
   updateMyPresence: (updates: Partial<RoomPlayer>) => Promise<void>;
   leaveRoom: () => Promise<void>;
+  subscribeEvents: (callback: (event: RoomBroadcastEvent) => void) => () => void;
 }
 
 export interface ConnectRoomOptions {
@@ -45,7 +46,7 @@ export interface ConnectRoomOptions {
   avatar: string;
   isHost: boolean;
   onPlayersChange: (players: RoomPlayer[]) => void;
-  onEvent: (event: RoomBroadcastEvent) => void;
+  onEvent?: (event: RoomBroadcastEvent) => void;
   onConnectionStatus?: (status: 'connecting' | 'connected' | 'error' | 'disconnected') => void;
 }
 
@@ -70,6 +71,12 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
   });
 
   let currentPresenceState: Record<string, any[]> = {};
+  const eventListeners = new Set<(event: RoomBroadcastEvent) => void>();
+  if (onEvent) {
+    eventListeners.add(onEvent);
+  }
+
+  let roomManager: MultiplayerRoomManager | null = null;
 
   const parsePlayers = (presenceState: Record<string, any[]>): RoomPlayer[] => {
     const players: RoomPlayer[] = [];
@@ -99,28 +106,40 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
     });
   };
 
+  const handlePresenceChange = () => {
+    currentPresenceState = channel.presenceState();
+    const players = parsePlayers(currentPresenceState);
+
+    // Auto-host migration if host left
+    if (players.length > 0 && !players.some(p => p.isHost)) {
+      const newHost = players[0];
+      if (newHost.id === myPlayerId && roomManager) {
+        roomManager.isHost = true;
+        roomManager.updateMyPresence({ isHost: true });
+        newHost.isHost = true;
+      }
+    }
+
+    onPlayersChange(players);
+  };
+
   // Listen to Presence
   channel
-    .on('presence', { event: 'sync' }, () => {
-      currentPresenceState = channel.presenceState();
-      const players = parsePlayers(currentPresenceState);
-      onPlayersChange(players);
-    })
-    .on('presence', { event: 'join' }, () => {
-      currentPresenceState = channel.presenceState();
-      const players = parsePlayers(currentPresenceState);
-      onPlayersChange(players);
-    })
-    .on('presence', { event: 'leave' }, () => {
-      currentPresenceState = channel.presenceState();
-      const players = parsePlayers(currentPresenceState);
-      onPlayersChange(players);
-    });
+    .on('presence', { event: 'sync' }, handlePresenceChange)
+    .on('presence', { event: 'join' }, handlePresenceChange)
+    .on('presence', { event: 'leave' }, handlePresenceChange);
 
   // Listen to Broadcasts
   channel.on('broadcast', { event: 'ROOM_EVENT' }, (envelope: any) => {
     if (envelope && envelope.payload) {
-      onEvent(envelope.payload as RoomBroadcastEvent);
+      const event = envelope.payload as RoomBroadcastEvent;
+      eventListeners.forEach(listener => {
+        try {
+          listener(event);
+        } catch (err) {
+          console.error('Error in room event listener:', err);
+        }
+      });
     }
   });
 
@@ -141,7 +160,7 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
           joinedAt: Date.now()
         });
 
-        const manager: MultiplayerRoomManager = {
+        roomManager = {
           channel,
           roomCode: cleanCode,
           myPlayerId,
@@ -174,10 +193,16 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
               await channel.untrack();
               await channel.unsubscribe();
             } catch (_) {}
+          },
+          subscribeEvents: (callback: (event: RoomBroadcastEvent) => void) => {
+            eventListeners.add(callback);
+            return () => {
+              eventListeners.delete(callback);
+            };
           }
         };
 
-        resolve(manager);
+        resolve(roomManager);
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         onConnectionStatus?.('error');
         resolve(null);

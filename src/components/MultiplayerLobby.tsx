@@ -35,7 +35,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
-  const isHost = manager.isHost;
+  const isHost = manager.isHost || !!players.find(p => p.id === manager.myPlayerId)?.isHost;
 
   // Synchronize settings changes if host updates them
   const updateSetting = <K extends keyof RoomSettings>(key: K, value: RoomSettings[K]) => {
