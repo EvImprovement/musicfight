@@ -22,16 +22,22 @@ export function cleanSongTitle(title: string): string {
 // Preset themes with verified Deezer playlist IDs for maximum famous tracks
 export const PRESET_THEMES: CategoryTheme[] = [
   {
-    id: 'top-france',
-    name: 'Top 50 France',
-    description: 'Les plus grands hits du moment en France',
-    icon: '🔥',
-    type: 'chart',
-    deezerId: '3155776842',
-    query: 'French Hits 2024',
-    coverUrl: 'https://images.deezer.com/images/cover/0e9a59b2dcd682705786ba1fa57353f4/250x250.jpg',
-    color: 'linear-gradient(135deg, #ff416c, #ff4b2b)',
-    badge: 'Hits du Moment'
+    id: 'rap-fr',
+    name: 'Rap Français',
+    description: 'Ninho, Jul, SCH, PNL, Gazo, Damso, Booba, PLK, Kaaris, Niska...',
+    icon: '🎙️',
+    type: 'playlist',
+    deezerId: '5175061384',
+    secondaryDeezerId: '9563400362',
+    extraDeezerIds: [
+      '10013316202',
+      '11566938984',
+      '1999435002'
+    ],
+    query: 'Rap Francais Classiques Hits',
+    coverUrl: 'https://images.deezer.com/images/cover/ed1a24d528b9fb6c6f7cbb115682245b/250x250.jpg',
+    color: 'linear-gradient(135deg, #8e2de2, #4a00e0)',
+    badge: 'Bangers FR'
   },
   {
     id: 'white-girl-music',
@@ -44,6 +50,19 @@ export const PRESET_THEMES: CategoryTheme[] = [
     query: 'White Girl Music Hits',
     color: 'linear-gradient(135deg, #ff007f, #ff758c)',
     badge: 'Pop Anthems'
+  },
+  {
+    id: 'rap-us',
+    name: 'Rap US',
+    description: 'Eminem, 2Pac, The Notorious B.I.G., 50 Cent, Kendrick Lamar, Travis Scott, Drake...',
+    icon: '👑',
+    type: 'playlist',
+    deezerId: '9771682482',
+    secondaryDeezerId: '10335983602',
+    extraDeezerIds: ['3995638642'],
+    query: 'Rap US Classics',
+    color: 'linear-gradient(135deg, #f7971e, #ffd200)',
+    badge: 'Hip-Hop Legends'
   },
   {
     id: 'annees-2010',
@@ -68,74 +87,6 @@ export const PRESET_THEMES: CategoryTheme[] = [
     query: '00s Hits',
     color: 'linear-gradient(135deg, #f857a6, #ff5858)',
     badge: 'Nostalgie 2000'
-  },
-  {
-    id: 'rap-us',
-    name: 'Rap US',
-    description: 'Eminem, 2Pac, The Notorious B.I.G., 50 Cent, Kendrick Lamar, Travis Scott, Drake...',
-    icon: '👑',
-    type: 'playlist',
-    deezerId: '9771682482',
-    secondaryDeezerId: '10335983602',
-    extraDeezerIds: ['3995638642'],
-    query: 'Rap US Classics',
-    color: 'linear-gradient(135deg, #f7971e, #ffd200)',
-    badge: 'Hip-Hop Legends'
-  },
-  {
-    id: 'rap-fr',
-    name: 'Rap Français',
-    description: 'Ninho, Jul, SCH, PNL, Gazo, Damso, Booba, PLK, Kaaris, Niska...',
-    icon: '🎙️',
-    type: 'playlist',
-    deezerId: '5175061384',
-    secondaryDeezerId: '9563400362',
-    extraDeezerIds: [
-      '10013316202',
-      '11566938984',
-      '1999435002'
-    ],
-    query: 'Rap Francais Classiques Hits',
-    coverUrl: 'https://images.deezer.com/images/cover/ed1a24d528b9fb6c6f7cbb115682245b/250x250.jpg',
-    color: 'linear-gradient(135deg, #8e2de2, #4a00e0)',
-    badge: 'Bangers FR'
-  },
-  {
-    id: 'electro-dance',
-    name: 'Electro & Dance',
-    description: 'Avicii, David Guetta, Calvin Harris, Daft Punk, Swedish House Mafia...',
-    icon: '⚡',
-    type: 'playlist',
-    deezerId: '3264808726',
-    secondaryDeezerId: '11118315824',
-    query: 'EDM Classics',
-    color: 'linear-gradient(135deg, #00f2fe, #4facfe)',
-    badge: 'Club & Festival'
-  },
-  {
-    id: 'rock-classics',
-    name: 'Rock & Metal',
-    description: 'Queen, AC/DC, Nirvana, Metallica, Pink Floyd, Muse, Linkin Park...',
-    icon: '🎸',
-    type: 'playlist',
-    deezerId: '1306931615',
-    secondaryDeezerId: '1419215845',
-    query: 'Rock Essentials',
-    color: 'linear-gradient(135deg, #f12711, #f5af19)',
-    badge: 'Rock Cultes'
-  },
-  {
-    id: 'pop-80s-90s',
-    name: 'Années 80 & 90',
-    description: 'Michael Jackson, Madonna, Queen, Début de Soirée, Earth Wind & Fire...',
-    icon: '📼',
-    type: 'playlist',
-    deezerId: '1268089951',
-    secondaryDeezerId: '60994846',
-    query: 'Tubes des annees 80',
-    coverUrl: 'https://images.deezer.com/images/cover/84ff358eaae626bd3ea671e21b0fbba7/250x250.jpg',
-    color: 'linear-gradient(135deg, #b224ef, #7579ff)',
-    badge: 'Hits Rétro'
   },
   {
     id: 'disney-hits',

@@ -6,6 +6,8 @@ import { GameBoard } from './components/GameBoard';
 import { ResultScreen } from './components/ResultScreen';
 import { Leaderboard } from './components/Leaderboard';
 import { HelpModal } from './components/HelpModal';
+import { AuthModal } from './components/AuthModal';
+import { getStoredPlayerProfile } from './services/supabaseClient';
 import type { CategoryTheme, GameSettings, GameStats, LocalPlayerState } from './types/game';
 
 export const App: React.FC = () => {
@@ -19,6 +21,7 @@ export const App: React.FC = () => {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isGameModeModalOpen, setIsGameModeModalOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(!getStoredPlayerProfile());
 
   const handleSelectTheme = (theme: CategoryTheme) => {
     setSelectedTheme(theme);
@@ -58,6 +61,7 @@ export const App: React.FC = () => {
         onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
         onOpenHelp={() => setIsHelpOpen(true)}
         onHomeClick={handleGoHome}
+        onOpenAuth={() => setIsAuthOpen(true)}
       />
 
       <main className="main-content">
@@ -103,6 +107,15 @@ export const App: React.FC = () => {
       {isHelpOpen && (
         <HelpModal onClose={() => setIsHelpOpen(false)} />
       )}
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onAuthSuccess={() => {
+          setIsAuthOpen(false);
+        }}
+        canDismiss={!!getStoredPlayerProfile()}
+      />
     </div>
   );
 };

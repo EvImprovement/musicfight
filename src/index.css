@@ -1140,6 +1140,187 @@ button:active {
   height: 44px;
 }
 
+/* Auth Modal Styles */
+.auth-modal-card {
+  max-width: 440px;
+  padding: 2rem 1.6rem;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.auth-icon-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(138, 43, 226, 0.25));
+  border: 1.5px solid var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.9rem;
+  color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.auth-alert {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.2rem;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-alert {
+  background: rgba(255, 68, 68, 0.15);
+  border: 1px solid rgba(255, 68, 68, 0.35);
+  color: #ff6b6b;
+}
+
+.success-alert {
+  background: rgba(0, 255, 136, 0.15);
+  border: 1px solid rgba(0, 255, 136, 0.35);
+  color: #00ff88;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid var(--border-glass);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.auth-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.input-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.submit-auth-btn {
+  margin-top: 0.5rem;
+  padding: 0.9rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 30px;
+}
+
+.auth-footer-toggle {
+  text-align: center;
+  margin-top: 1.25rem;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+}
+
+.auth-toggle-link {
+  background: none;
+  border: none;
+  color: var(--accent-cyan);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0 0.25rem;
+}
+
+.auth-toggle-link:hover {
+  color: #fff;
+}
+
+/* Profile Display Card */
+.profile-card-display {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-glass);
+  padding: 1.2rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+}
+
+.profile-avatar-large {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-pink));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  box-shadow: var(--glow-cyan);
+  flex-shrink: 0;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.profile-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.profile-username-large {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-pin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.auth-actions-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn-logout {
+  border-color: rgba(255, 68, 68, 0.4);
+  color: #ff6b6b;
+}
+
+.btn-logout:hover {
+  background: rgba(255, 68, 68, 0.15);
+  border-color: #ff6b6b;
+}
+
 /* ==========================================================================
    GAMEBOARD ARENA (Mobile-First & Responsiveness)
    ========================================================================== */
@@ -1898,11 +2079,16 @@ button:active {
   }
 
   .navbar-container {
-    padding: 0.6rem 0.85rem;
+    padding: 0.55rem 0.65rem;
+    gap: 0.35rem;
+  }
+
+  .navbar-brand {
+    gap: 0.45rem;
   }
 
   .brand-title {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
   }
 
   .brand-tagline {
@@ -1914,30 +2100,42 @@ button:active {
   }
 
   .navbar-actions {
-    gap: 0.4rem;
+    gap: 0.35rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: calc(100vw - 120px);
+    flex-shrink: 1;
+    padding: 2px 2px 2px 0;
+  }
+
+  .navbar-actions::-webkit-scrollbar {
+    display: none;
   }
 
   .profile-pill {
-    padding: 0.38rem 0.65rem;
-    font-size: 0.82rem;
-    max-width: 120px;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+    max-width: 100px;
+    flex-shrink: 0;
   }
 
-  .name-form {
-    padding: 0.15rem 0.25rem;
-    gap: 0.2rem;
-    max-width: 170px;
+  .nav-btn {
+    padding: 0.4rem;
+    min-width: 34px;
+    height: 34px;
+    flex-shrink: 0;
   }
 
-  .name-input {
-    width: 75px;
-    font-size: 0.82rem;
-    padding: 0.2rem 0.3rem;
-  }
-
-  .name-action-btn {
-    width: 24px;
-    height: 24px;
+  .nav-btn.icon-only-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   .hero-banner {

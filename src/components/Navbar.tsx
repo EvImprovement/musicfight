@@ -1,44 +1,28 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, Trophy, User, Music, HelpCircle, Check, X } from 'lucide-react';
+import { Volume2, VolumeX, Trophy, User, Music, HelpCircle } from 'lucide-react';
 import { soundFx } from '../services/soundEffects';
-import { getStoredPlayerName, setStoredPlayerName } from '../services/supabaseClient';
+import { getStoredPlayerName } from '../services/supabaseClient';
 
 interface NavbarProps {
   onOpenLeaderboard: () => void;
   onOpenHelp: () => void;
   onHomeClick: () => void;
+  onOpenAuth: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenLeaderboard, onOpenHelp, onHomeClick }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onOpenLeaderboard,
+  onOpenHelp,
+  onHomeClick,
+  onOpenAuth
+}) => {
   const [isMuted, setIsMuted] = useState(soundFx.getMuted());
-  const [playerName, setPlayerName] = useState(getStoredPlayerName());
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [tempName, setTempName] = useState(playerName);
+  const playerName = getStoredPlayerName();
 
   const toggleSound = () => {
     const nextState = !isMuted;
     soundFx.setMuted(nextState);
     setIsMuted(nextState);
-  };
-
-  const handleSaveName = (e?: React.SyntheticEvent | React.FormEvent) => {
-    if (e && typeof e.preventDefault === 'function') {
-      e.preventDefault();
-    }
-    if (tempName.trim()) {
-      const clean = tempName.trim().slice(0, 16);
-      setStoredPlayerName(clean);
-      setPlayerName(clean);
-    }
-    setIsEditingName(false);
-  };
-
-  const handleCancelEdit = (e?: React.SyntheticEvent) => {
-    if (e && typeof e.preventDefault === 'function') {
-      e.preventDefault();
-    }
-    setTempName(playerName);
-    setIsEditingName(false);
   };
 
   return (
@@ -63,64 +47,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenLeaderboard, onOpenHelp, o
 
         {/* Action Controls */}
         <div className="navbar-actions">
-          {/* User Nickname Button */}
+          {/* User Profile Button */}
           <div className="user-profile-btn">
-            {isEditingName ? (
-              <form onSubmit={handleSaveName} className="name-form" action="#">
-                <input
-                  type="text"
-                  value={tempName}
-                  onChange={(e) => setTempName(e.target.value)}
-                  autoFocus
-                  maxLength={16}
-                  enterKeyHint="done"
-                  autoCorrect="off"
-                  autoCapitalize="words"
-                  spellCheck={false}
-                  className="name-input"
-                  placeholder="Pseudo"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleSaveName();
-                    }
-                    if (e.key === 'Escape') {
-                      e.preventDefault();
-                      handleCancelEdit();
-                    }
-                  }}
-                />
-                <button
-                  type="submit"
-                  className="name-action-btn name-confirm-btn"
-                  title="Valider"
-                  aria-label="Valider le pseudo"
-                  onTouchEnd={handleSaveName}
-                  onClick={handleSaveName}
-                >
-                  <Check className="icon-xs" />
-                </button>
-                <button
-                  type="button"
-                  className="name-action-btn name-cancel-btn"
-                  title="Annuler"
-                  aria-label="Annuler"
-                  onTouchEnd={handleCancelEdit}
-                  onClick={handleCancelEdit}
-                >
-                  <X className="icon-xs" />
-                </button>
-              </form>
-            ) : (
-              <button
-                onClick={() => { setTempName(playerName); setIsEditingName(true); }}
-                className="profile-pill"
-                title="Modifier mon pseudo"
-              >
-                <User className="icon-sm" />
-                <span className="player-name-display">{playerName}</span>
-              </button>
-            )}
+            <button
+              onClick={onOpenAuth}
+              className="profile-pill"
+              title="Mon Profil Joueur (Supabase)"
+            >
+              <User className="icon-sm text-cyan" />
+              <span className="player-name-display">{playerName}</span>
+            </button>
           </div>
 
           {/* Leaderboard Button */}
