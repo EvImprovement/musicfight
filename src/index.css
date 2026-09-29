@@ -2813,11 +2813,109 @@ button:active {
   border-radius: 12px;
 }
 
-.guest-waiting-badge {
+.settings-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.guest-lobby-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  background: rgba(10, 14, 26, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.guest-overlay-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 360px;
+  width: 100%;
+}
+
+.guest-overlay-spinner-box {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.1rem;
+}
+
+.guest-overlay-spinner {
+  width: 44px;
+  height: 44px;
+  animation: spin 1.2s linear infinite;
+  filter: drop-shadow(0 0 14px rgba(0, 242, 254, 0.7));
+}
+
+.guest-overlay-pulse-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 242, 254, 0.4);
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.guest-overlay-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 0.45rem;
+  letter-spacing: -0.2px;
+}
+
+.guest-overlay-desc {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0 0 1.2rem;
+}
+
+.guest-overlay-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.guest-summary-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.95rem;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border-glass);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.guest-summary-pill.theme {
+  background: rgba(0, 242, 254, 0.12);
+  border-color: rgba(0, 242, 254, 0.4);
+  color: #fff;
+}
+
+.guest-summary-icon {
+  font-size: 1.1rem;
+}
+
+.guest-summary-text {
+  font-weight: 800;
   color: var(--accent-cyan);
 }
 
@@ -3169,6 +3267,45 @@ button:active {
   object-fit: cover;
 }
 
+.lobby-active-album-covers-stack {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.lobby-stacked-cover-wrapper {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(17, 19, 38, 0.8);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.lobby-stacked-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lobby-stacked-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.lobby-stacked-more {
+  margin-left: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--accent-cyan);
+}
+
 .lobby-active-album-details {
   display: flex;
   flex-direction: column;
@@ -3191,6 +3328,15 @@ button:active {
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 0.1rem 0 0;
+}
+
+.lobby-active-album-artist {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 0.1rem;
 }
 
 .lobby-album-search-wrapper {
@@ -3261,12 +3407,35 @@ button:active {
   border-color: #38ef7d;
 }
 
-.lobby-album-thumb {
+.lobby-album-thumb-container {
+  position: relative;
   width: 34px;
   height: 34px;
+  flex-shrink: 0;
+}
+
+.lobby-album-thumb {
+  width: 100%;
+  height: 100%;
   border-radius: 6px;
   object-fit: cover;
-  flex-shrink: 0;
+}
+
+.lobby-album-check-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 15px;
+  height: 15px;
+  background: #38ef7d;
+  color: #0b0e17;
+  font-size: 0.65rem;
+  font-weight: 900;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 6px rgba(56, 239, 125, 0.8);
 }
 
 .lobby-album-meta {
@@ -3994,9 +4163,39 @@ button:active {
     padding: 0.35rem 0.45rem;
   }
 
-  .lobby-album-thumb {
+  .lobby-album-thumb-container {
     width: 28px;
     height: 28px;
+  }
+
+  .lobby-album-thumb {
+    width: 100%;
+    height: 100%;
+  }
+
+  .settings-panel {
+    min-height: 420px;
+  }
+
+  .guest-lobby-overlay {
+    padding: 1.25rem 1rem;
+  }
+
+  .guest-overlay-card {
+    max-width: 290px;
+  }
+
+  .guest-overlay-title {
+    font-size: 1.08rem;
+  }
+
+  .guest-overlay-desc {
+    font-size: 0.78rem;
+  }
+
+  .guest-summary-pill {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.76rem;
   }
 
   .lobby-album-name {
