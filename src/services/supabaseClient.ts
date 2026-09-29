@@ -225,16 +225,25 @@ export async function saveGameScore(entry: Omit<LeaderboardEntry, 'id' | 'create
   return newEntry;
 }
 
-export async function fetchLeaderboard(mode?: GameModeType): Promise<LeaderboardEntry[]> {
+export async function fetchLeaderboard(
+  mode?: GameModeType | 'all',
+  categoryName?: string | 'all'
+): Promise<LeaderboardEntry[]> {
+  const modeFilter = (mode && mode !== 'all') ? mode : undefined;
+  const categoryFilter = (categoryName && categoryName !== 'all') ? categoryName : undefined;
+
   // 1. Try Supabase first if available
   if (supabase) {
     try {
       let query = supabase.from('leaderboard').select('*').order('score', { ascending: false }).limit(50);
-      if (mode) {
-        query = query.eq('mode', mode);
+      if (modeFilter) {
+        query = query.eq('mode', modeFilter);
+      }
+      if (categoryFilter) {
+        query = query.ilike('category_name', `%${categoryFilter}%`);
       }
       const { data, error } = await query;
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         return data as LeaderboardEntry[];
       }
     } catch (_e) {
@@ -249,16 +258,26 @@ export async function fetchLeaderboard(mode?: GameModeType): Promise<Leaderboard
     // Seed default fun high scores if empty
     if (local.length === 0) {
       local = [
-        { id: '1', player_name: 'Mozart2.0', score: 980, accuracy: 100, mode: 'classic', category_name: 'Top 50 France', created_at: new Date(Date.now() - 3600000).toISOString() },
-        { id: '2', player_name: 'DJ_Neon', score: 920, accuracy: 90, mode: 'classic', category_name: 'Electro & Dance', created_at: new Date(Date.now() - 7200000).toISOString() },
-        { id: '3', player_name: 'RapMaster', score: 870, accuracy: 90, mode: 'classic', category_name: 'Rap Français', created_at: new Date(Date.now() - 86400000).toISOString() },
-        { id: '4', player_name: 'RockFan80', score: 810, accuracy: 80, mode: 'classic', category_name: 'Rock & Metal', created_at: new Date(Date.now() - 172800000).toISOString() }
+        { id: '1', player_name: 'Mozart2.0', score: 980, accuracy: 100, mode: 'classic', category_name: 'Rap Français', created_at: new Date(Date.now() - 3600000).toISOString() },
+        { id: '2', player_name: 'Jul135', score: 2650, accuracy: 95, mode: 'survival', category_name: 'Rap Français', created_at: new Date(Date.now() - 7200000).toISOString() },
+        { id: '3', player_name: 'NinhoSpeed', score: 1420, accuracy: 92, mode: 'timeattack', category_name: 'Rap Français', created_at: new Date(Date.now() - 10800000).toISOString() },
+        { id: '4', player_name: 'Swiftie1989', score: 950, accuracy: 100, mode: 'classic', category_name: 'White Girl Music', created_at: new Date(Date.now() - 14400000).toISOString() },
+        { id: '5', player_name: 'BritneyArmy', score: 2400, accuracy: 90, mode: 'survival', category_name: 'White Girl Music', created_at: new Date(Date.now() - 18000000).toISOString() },
+        { id: '6', player_name: 'SlimShady', score: 960, accuracy: 100, mode: 'classic', category_name: 'Rap US', created_at: new Date(Date.now() - 21600000).toISOString() },
+        { id: '7', player_name: 'KendrickGOAT', score: 2310, accuracy: 88, mode: 'survival', category_name: 'Rap US', created_at: new Date(Date.now() - 25200000).toISOString() },
+        { id: '8', player_name: 'Y2K_King', score: 890, accuracy: 90, mode: 'classic', category_name: 'Années 2000', created_at: new Date(Date.now() - 28800000).toISOString() },
+        { id: '9', player_name: 'HakunaMatata', score: 940, accuracy: 100, mode: 'classic', category_name: 'Disney & Dessins Animés', created_at: new Date(Date.now() - 32400000).toISOString() },
+        { id: '10', player_name: 'HansZimmerFan', score: 910, accuracy: 90, mode: 'classic', category_name: 'Films & Séries', created_at: new Date(Date.now() - 36000000).toISOString() },
+        { id: '11', player_name: 'GoldmanForever', score: 930, accuracy: 90, mode: 'classic', category_name: 'Chanson Française', created_at: new Date(Date.now() - 39600000).toISOString() }
       ];
       localStorage.setItem(LOCAL_SCORES_KEY, JSON.stringify(local));
     }
 
-    if (mode) {
-      local = local.filter(e => e.mode === mode);
+    if (modeFilter) {
+      local = local.filter(e => e.mode === modeFilter);
+    }
+    if (categoryFilter) {
+      local = local.filter(e => e.category_name && e.category_name.toLowerCase().includes(categoryFilter.toLowerCase()));
     }
     return local.sort((a, b) => b.score - a.score);
   } catch (_) {
