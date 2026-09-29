@@ -143,7 +143,6 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme }) =
               style={{ '--theme-gradient': theme.color } as React.CSSProperties}
             >
               <div className="card-header-bg" style={{ background: theme.color }}>
-                {theme.badge && <span className="theme-card-badge">{theme.badge}</span>}
                 <span className="theme-emoji">{theme.icon}</span>
               </div>
               <div className="card-body">
@@ -152,7 +151,6 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme }) =
                 </div>
                 <p className="theme-desc">{theme.description}</p>
                 <div className="card-footer">
-                  <span className="tracks-count-pill">100+ Tubes</span>
                   <span className="play-badge">
                     <Play className="play-icon" /> Jouer
                   </span>

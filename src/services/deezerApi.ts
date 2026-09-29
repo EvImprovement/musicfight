@@ -36,8 +36,7 @@ export const PRESET_THEMES: CategoryTheme[] = [
     ],
     query: 'Rap Francais Classiques Hits',
     coverUrl: 'https://images.deezer.com/images/cover/ed1a24d528b9fb6c6f7cbb115682245b/250x250.jpg',
-    color: 'linear-gradient(135deg, #8e2de2, #4a00e0)',
-    badge: 'Bangers FR'
+    color: 'linear-gradient(135deg, #8e2de2, #4a00e0)'
   },
   {
     id: 'white-girl-music',
@@ -48,8 +47,7 @@ export const PRESET_THEMES: CategoryTheme[] = [
     deezerId: '12458795303',
     secondaryDeezerId: '12334475271',
     query: 'White Girl Music Hits',
-    color: 'linear-gradient(135deg, #ff007f, #ff758c)',
-    badge: 'Pop Anthems'
+    color: 'linear-gradient(135deg, #ff007f, #ff758c)'
   },
   {
     id: 'rap-us',
@@ -61,8 +59,7 @@ export const PRESET_THEMES: CategoryTheme[] = [
     secondaryDeezerId: '10335983602',
     extraDeezerIds: ['3995638642'],
     query: 'Rap US Classics',
-    color: 'linear-gradient(135deg, #f7971e, #ffd200)',
-    badge: 'Hip-Hop Legends'
+    color: 'linear-gradient(135deg, #f7971e, #ffd200)'
   },
   {
     id: 'annees-2010',
@@ -73,8 +70,7 @@ export const PRESET_THEMES: CategoryTheme[] = [
     deezerId: '715215865',
     secondaryDeezerId: '14917741483',
     query: '10s Party Hits',
-    color: 'linear-gradient(135deg, #00c6ff, #0072ff)',
-    badge: 'Génération 2010'
+    color: 'linear-gradient(135deg, #00c6ff, #0072ff)'
   },
   {
     id: 'annees-2000',
@@ -85,8 +81,7 @@ export const PRESET_THEMES: CategoryTheme[] = [
     deezerId: '248297032',
     secondaryDeezerId: '1977689462',
     query: '00s Hits',
-    color: 'linear-gradient(135deg, #f857a6, #ff5858)',
-    badge: 'Nostalgie 2000'
+    color: 'linear-gradient(135deg, #f857a6, #ff5858)'
   },
   {
     id: 'disney-hits',
@@ -98,8 +93,7 @@ export const PRESET_THEMES: CategoryTheme[] = [
     secondaryDeezerId: '1032758771',
     extraDeezerIds: ['7548451242', '11817251201'],
     query: 'Disney Les Classiques',
-    color: 'linear-gradient(135deg, #a8c0ff, #3f2b96)',
-    badge: 'Magie Disney'
+    color: 'linear-gradient(135deg, #a8c0ff, #3f2b96)'
   },
   {
     id: 'cinema-anime',
@@ -110,8 +104,7 @@ export const PRESET_THEMES: CategoryTheme[] = [
     deezerId: '12964806423',
     secondaryDeezerId: '18590290',
     query: 'Bandes originales cultes',
-    color: 'linear-gradient(135deg, #11998e, #38ef7d)',
-    badge: 'B.O. Mythiques'
+    color: 'linear-gradient(135deg, #11998e, #38ef7d)'
   },
   {
     id: 'chanson-francaise',
@@ -123,8 +116,7 @@ export const PRESET_THEMES: CategoryTheme[] = [
     secondaryDeezerId: '7346990584',
     extraDeezerIds: ['1420459465', '11462021084'],
     query: 'Les 100 plus belles chansons francaises',
-    color: 'linear-gradient(135deg, #3a7bd5, #3a6073)',
-    badge: 'Patrimoine FR'
+    color: 'linear-gradient(135deg, #3a7bd5, #3a6073)'
   }
 ];
 
