@@ -47,6 +47,9 @@ html {
   background-color: var(--bg-dark);
   color-scheme: dark;
   -webkit-text-size-adjust: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -59,9 +62,20 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
+  position: relative;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 button, input, select, textarea {
@@ -101,14 +115,19 @@ button:active {
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .main-content {
   flex: 1;
   max-width: 1200px;
   width: 100%;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 1.5rem 1rem calc(2rem + env(safe-area-inset-bottom, 16px));
+  overflow-x: hidden;
 }
 
 /* Navbar */
@@ -239,15 +258,57 @@ button:active {
   box-shadow: var(--glow-cyan);
 }
 
-.name-input {
+.name-form {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   background: rgba(0, 0, 0, 0.5);
+  padding: 0.2rem 0.35rem;
+  border-radius: 25px;
   border: 1.5px solid var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.name-input {
+  background: transparent;
+  border: none;
   color: #fff;
-  padding: 0.4rem 0.75rem;
-  border-radius: 20px;
+  padding: 0.25rem 0.45rem;
   font-size: 0.88rem;
   outline: none;
-  width: 110px;
+  width: 90px;
+}
+
+.name-action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.name-confirm-btn {
+  background: var(--success-color);
+  color: #000;
+}
+
+.name-confirm-btn:hover {
+  filter: brightness(1.15);
+}
+
+.name-cancel-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-secondary);
+}
+
+.name-cancel-btn:hover {
+  background: var(--danger-color);
+  color: #fff;
 }
 
 .nav-btn {
@@ -436,6 +497,8 @@ button:active {
   border-radius: 40px;
   border: 1px solid var(--border-glass);
   max-width: 680px;
+  width: 100%;
+  box-sizing: border-box;
   margin-left: auto;
   margin-right: auto;
 }
@@ -456,6 +519,15 @@ button:active {
   cursor: pointer;
   transition: all 0.22s ease;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.tab-label-full {
+  display: inline;
+}
+
+.tab-label-short {
+  display: none;
 }
 
 .tab-btn.active {
@@ -1841,10 +1913,41 @@ button:active {
     display: none;
   }
 
+  .navbar-actions {
+    gap: 0.4rem;
+  }
+
+  .profile-pill {
+    padding: 0.38rem 0.65rem;
+    font-size: 0.82rem;
+    max-width: 120px;
+  }
+
+  .name-form {
+    padding: 0.15rem 0.25rem;
+    gap: 0.2rem;
+    max-width: 170px;
+  }
+
+  .name-input {
+    width: 75px;
+    font-size: 0.82rem;
+    padding: 0.2rem 0.3rem;
+  }
+
+  .name-action-btn {
+    width: 24px;
+    height: 24px;
+  }
+
   .hero-banner {
     padding: 1.75rem 1rem 1.4rem;
     border-radius: var(--radius-md);
     margin-bottom: 1.4rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
   .hero-title {
@@ -1857,21 +1960,47 @@ button:active {
   }
 
   .selector-tabs {
-    gap: 0.35rem;
-    padding: 0.35rem;
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    gap: 0.25rem;
+    padding: 0.25rem;
     border-radius: 25px;
     margin-bottom: 1.4rem;
+    overflow: hidden;
   }
 
   .tab-btn {
-    padding: 0.6rem 0.5rem;
-    font-size: 0.82rem;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0.55rem 0.25rem;
+    font-size: 0.8rem;
     border-radius: 20px;
+    justify-content: center;
+    gap: 0.3rem;
+  }
+
+  .tab-label-full {
+    display: none !important;
+  }
+
+  .tab-label-short {
+    display: inline !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .tab-icon {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    padding: 0.85rem 2.6rem;
+    font-size: 0.92rem;
   }
 
   .theme-grid {

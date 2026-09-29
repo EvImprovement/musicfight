@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, Trophy, User, Music, HelpCircle } from 'lucide-react';
+import { Volume2, VolumeX, Trophy, User, Music, HelpCircle, Check, X } from 'lucide-react';
 import { soundFx } from '../services/soundEffects';
 import { getStoredPlayerName, setStoredPlayerName } from '../services/supabaseClient';
 
@@ -21,13 +21,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenLeaderboard, onOpenHelp, o
     setIsMuted(nextState);
   };
 
-  const handleSaveName = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveName = (e?: React.SyntheticEvent | React.FormEvent) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     if (tempName.trim()) {
       const clean = tempName.trim().slice(0, 16);
       setStoredPlayerName(clean);
       setPlayerName(clean);
     }
+    setIsEditingName(false);
+  };
+
+  const handleCancelEdit = (e?: React.SyntheticEvent) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
+    setTempName(playerName);
     setIsEditingName(false);
   };
 
@@ -56,16 +66,50 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenLeaderboard, onOpenHelp, o
           {/* User Nickname Button */}
           <div className="user-profile-btn">
             {isEditingName ? (
-              <form onSubmit={handleSaveName} className="name-form">
+              <form onSubmit={handleSaveName} className="name-form" action="#">
                 <input
                   type="text"
                   value={tempName}
                   onChange={(e) => setTempName(e.target.value)}
                   autoFocus
                   maxLength={16}
-                  onBlur={() => setIsEditingName(false)}
+                  enterKeyHint="done"
+                  autoCorrect="off"
+                  autoCapitalize="words"
+                  spellCheck={false}
                   className="name-input"
+                  placeholder="Pseudo"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSaveName();
+                    }
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      handleCancelEdit();
+                    }
+                  }}
                 />
+                <button
+                  type="submit"
+                  className="name-action-btn name-confirm-btn"
+                  title="Valider"
+                  aria-label="Valider le pseudo"
+                  onTouchEnd={handleSaveName}
+                  onClick={handleSaveName}
+                >
+                  <Check className="icon-xs" />
+                </button>
+                <button
+                  type="button"
+                  className="name-action-btn name-cancel-btn"
+                  title="Annuler"
+                  aria-label="Annuler"
+                  onTouchEnd={handleCancelEdit}
+                  onClick={handleCancelEdit}
+                >
+                  <X className="icon-xs" />
+                </button>
               </form>
             ) : (
               <button

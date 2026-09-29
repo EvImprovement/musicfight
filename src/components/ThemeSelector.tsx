@@ -109,21 +109,24 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme }) =
           onClick={() => setActiveTab('themes')}
         >
           <Disc className="tab-icon" />
-          <span>Playlists Thématiques</span>
+          <span className="tab-label-full">Playlists Thématiques</span>
+          <span className="tab-label-short">Playlists</span>
         </button>
         <button
           className={`tab-btn ${activeTab === 'search' ? 'active' : ''}`}
           onClick={() => setActiveTab('search')}
         >
           <Search className="tab-icon" />
-          <span>Rechercher un Artiste</span>
+          <span className="tab-label-full">Rechercher un Artiste</span>
+          <span className="tab-label-short">Artistes</span>
         </button>
         <button
           className={`tab-btn ${activeTab === 'albums' ? 'active' : ''}`}
           onClick={() => setActiveTab('albums')}
         >
           <Library className="tab-icon" />
-          <span>Rechercher un Album</span>
+          <span className="tab-label-full">Rechercher un Album</span>
+          <span className="tab-label-short">Albums</span>
         </button>
       </div>
 

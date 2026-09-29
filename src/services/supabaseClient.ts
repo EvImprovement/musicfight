@@ -5,7 +5,7 @@ const rawSupabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
 // Clean URL: automatically remove /rest/v1 or trailing slashes if accidentally included
-export const supabaseUrl = rawSupabaseUrl
+const supabaseUrl = rawSupabaseUrl
   .replace(/\/rest\/v1\/?$/i, '')
   .replace(/\/rest\/?$/i, '')
   .replace(/\/+$/, '');
@@ -16,12 +16,6 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
 
 export function isSupabaseConnected(): boolean {
   return !!supabase;
-}
-
-if (supabase) {
-  console.log('🟢 [MusicFight] Connecté à Supabase :', supabaseUrl);
-} else {
-  console.info('ℹ️ [MusicFight] Supabase non configuré. Mode LocalStorage actif pour les scores.');
 }
 
 const LOCAL_SCORES_KEY = 'musicfight_leaderboard_v1';
@@ -50,8 +44,8 @@ export async function saveGameScore(entry: Omit<LeaderboardEntry, 'id' | 'create
     existing.sort((a, b) => b.score - a.score);
     // Keep top 100
     localStorage.setItem(LOCAL_SCORES_KEY, JSON.stringify(existing.slice(0, 100)));
-  } catch (err) {
-    console.warn('Erreur sauvegarde locale score:', err);
+  } catch (_err) {
+    // Local storage fallback
   }
 
   // 2. Try saving to Supabase if configured
@@ -61,8 +55,8 @@ export async function saveGameScore(entry: Omit<LeaderboardEntry, 'id' | 'create
       if (!error && data) {
         return data as LeaderboardEntry;
       }
-    } catch (e) {
-      console.warn('Supabase save score fallback to local:', e);
+    } catch (_e) {
+      // Fallback to local
     }
   }
 
@@ -81,8 +75,8 @@ export async function fetchLeaderboard(mode?: GameModeType): Promise<Leaderboard
       if (!error && data && data.length > 0) {
         return data as LeaderboardEntry[];
       }
-    } catch (e) {
-      console.warn('Supabase fetch leaderboard error, fallback local:', e);
+    } catch (_e) {
+      // Fallback to local
     }
   }
 
