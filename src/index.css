@@ -896,7 +896,8 @@ button:active {
 }
 
 /* Modals */
-.modal-backdrop {
+.modal-backdrop,
+.modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
@@ -1181,6 +1182,10 @@ button:active {
 /* Auth Modal Styles */
 .auth-modal-card {
   max-width: 440px;
+  width: 100%;
+  margin: auto;
+  position: relative;
+  z-index: 201;
   padding: 2rem 1.6rem;
 }
 

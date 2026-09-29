@@ -104,7 +104,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true">
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => {
+        if (canDismiss && e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="modal-card auth-modal-card">
         {canDismiss && (
           <button
