@@ -138,35 +138,147 @@ async function fetchDeezer(endpoint: string): Promise<any> {
   return null;
 }
 
-// Search for artists exclusively on Deezer
-export async function searchArtists(query: string) {
-  if (!query.trim()) return [];
-  const data = await fetchDeezer(`/search/artist?q=${encodeURIComponent(query)}&limit=16`);
-  if (data && data.data) {
-    return data.data.map((artist: any) => ({
-      id: artist.id,
-      name: artist.name,
-      picture: artist.picture_medium || artist.picture_big,
-      nb_fans: artist.nb_fan
-    }));
-  }
-  return [];
+// Helper to extract clean base album title for smart deduplication
+function cleanAlbumForDedupe(title: string): string {
+  if (!title) return '';
+  return title
+    .toLowerCase()
+    .replace(/\s*\((deluxe|ré-?édition|edition|version|remaster|collector|bonus|explicit|clean|anniversary|expanded).*?\)/gi, '')
+    .replace(/\s*\[.*?\]/gi, '')
+    .replace(/\s*-\s*(deluxe|ré-?édition|remaster).*$/gi, '')
+    .replace(/édition\s+(ultime|collector|deluxe|spéciale)/gi, '')
+    .trim();
 }
 
-// Search for albums on Deezer
-export async function searchAlbums(query: string) {
-  if (!query.trim()) return [];
-  const data = await fetchDeezer(`/search/album?q=${encodeURIComponent(query)}&limit=16`);
-  if (data && data.data) {
-    return data.data.map((album: any) => ({
-      id: album.id,
-      title: cleanSongTitle(album.title),
-      artistName: album.artist?.name || 'Artiste Inconnu',
-      cover: album.cover_medium || album.cover_big,
-      nb_tracks: album.nb_tracks
-    }));
+// Search for artists exclusively on Deezer with deduplication and popularity ranking
+export async function searchArtists(query: string) {
+  const cleanQ = query.trim();
+  if (!cleanQ) return [];
+  const q = cleanQ.toLowerCase();
+
+  // Fetch up to 40 candidates to catch top artists even if Deezer returns homonyms first
+  const data = await fetchDeezer(`/search/artist?q=${encodeURIComponent(cleanQ)}&limit=40`);
+  if (!data || !data.data || !Array.isArray(data.data)) return [];
+
+  // Deduplicate artists by normalized name, keeping the one with the highest fan count
+  const artistMap = new Map<string, any>();
+  for (const artist of data.data) {
+    if (!artist || !artist.name) continue;
+    const key = artist.name.toLowerCase().trim();
+    const existing = artistMap.get(key);
+    if (!existing || (artist.nb_fan || 0) > (existing.nb_fan || 0)) {
+      artistMap.set(key, artist);
+    }
   }
-  return [];
+
+  const uniqueArtists = Array.from(artistMap.values());
+
+  // Rank by composite relevance + popularity score
+  uniqueArtists.sort((a, b) => {
+    const score = (artist: any) => {
+      const name = artist.name.toLowerCase().trim();
+      const fans = artist.nb_fan || 0;
+      const fanScore = Math.log10(Math.max(1, fans)); // logarithmic: 0 to ~7.5
+
+      let textScore = 0;
+      if (name === q) {
+        textScore = 8;
+      } else if (name.startsWith(q)) {
+        textScore = 4;
+      } else if (name.includes(q)) {
+        textScore = 1;
+      }
+      return fanScore + textScore;
+    };
+    return score(b) - score(a);
+  });
+
+  return uniqueArtists.slice(0, 16).map((artist: any) => ({
+    id: artist.id,
+    name: artist.name,
+    picture: artist.picture_medium || artist.picture_big,
+    nb_fans: artist.nb_fan
+  }));
+}
+
+// Search for albums on Deezer with deduplication (single/deluxe merging) and smart ranking
+export async function searchAlbums(query: string) {
+  const cleanQ = query.trim();
+  if (!cleanQ) return [];
+  const q = cleanQ.toLowerCase();
+
+  // Fetch up to 40 candidates from Deezer
+  const data = await fetchDeezer(`/search/album?q=${encodeURIComponent(cleanQ)}&limit=40`);
+  if (!data || !data.data || !Array.isArray(data.data)) return [];
+
+  // Filter out singles (< 4 tracks) as a blind test requires multiple tracks
+  const validAlbums = data.data.filter(
+    (item: any) => item && (item.nb_tracks || 0) >= 4 && item.record_type !== 'single'
+  );
+
+  // Deduplicate by (baseTitle + artistName), keeping the edition with the most tracks
+  const albumMap = new Map<string, { item: any; originalIndex: number }>();
+  for (let i = 0; i < validAlbums.length; i++) {
+    const item = validAlbums[i];
+    const baseTitle = cleanAlbumForDedupe(item.title);
+    const artist = (item.artist?.name || '').toLowerCase().trim();
+    const key = `${baseTitle}::${artist}`;
+
+    if (!albumMap.has(key)) {
+      albumMap.set(key, { item, originalIndex: i });
+    } else {
+      const existing = albumMap.get(key)!;
+      if ((item.nb_tracks || 0) > (existing.item.nb_tracks || 0)) {
+        albumMap.set(key, { item, originalIndex: Math.min(existing.originalIndex, i) });
+      }
+    }
+  }
+
+  const uniqueAlbums = Array.from(albumMap.values());
+
+  // Rank unique albums by query relevance, track count, and original Deezer popularity
+  uniqueAlbums.sort((a, b) => {
+    const scoreItem = (entry: { item: any; originalIndex: number }) => {
+      const item = entry.item;
+      const title = item.title.toLowerCase().trim();
+      const baseTitle = cleanAlbumForDedupe(item.title);
+      const artist = (item.artist?.name || '').toLowerCase().trim();
+
+      let textScore = 0;
+      if (baseTitle === q || title === q) {
+        textScore = 15;
+      } else if (baseTitle.startsWith(q) || title.startsWith(q)) {
+        textScore = 8;
+      } else if (artist === q) {
+        textScore = 10;
+      } else if (artist.startsWith(q)) {
+        textScore = 6;
+      } else if (q.includes(baseTitle) && q.includes(artist)) {
+        textScore = 25; // user searched both artist and album name
+      } else if (q.includes(baseTitle) || q.includes(artist)) {
+        textScore = 12;
+      } else if (baseTitle.includes(q)) {
+        textScore = 4;
+      }
+
+      // Track count bonus for full albums
+      const trackBonus = Math.min(item.nb_tracks || 0, 20) * 0.2;
+      // Position score preserving Deezer's natural popularity ranking
+      const posScore = Math.max(0, 10 - entry.originalIndex * 0.5);
+
+      return textScore + trackBonus + posScore;
+    };
+
+    return scoreItem(b) - scoreItem(a);
+  });
+
+  return uniqueAlbums.slice(0, 16).map(({ item }) => ({
+    id: item.id,
+    title: cleanSongTitle(item.title),
+    artistName: item.artist?.name || 'Artiste Inconnu',
+    cover: item.cover_medium || item.cover_big,
+    nb_tracks: item.nb_tracks
+  }));
 }
 
 // Fetch tracks for a specific artist strictly from Deezer (loads up to 100 top tracks)

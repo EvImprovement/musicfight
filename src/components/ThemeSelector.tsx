@@ -197,7 +197,9 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme }) =
                 </div>
                 <div className="artist-info">
                   <h4 className="artist-name">{artist.name}</h4>
-                  <span className="artist-badge">Blind Test Spécial</span>
+                  <span className="artist-badge">
+                    {artist.nb_fans ? `${artist.nb_fans.toLocaleString('fr-FR')} fans` : 'Blind Test Spécial'}
+                  </span>
                 </div>
                 <button className="artist-play-btn">
                   <Play className="play-icon-sm" /> Lancer
@@ -251,7 +253,9 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme }) =
                 </div>
                 <div className="artist-info">
                   <h4 className="artist-name">{album.title}</h4>
-                  <span className="artist-badge">{album.artistName}</span>
+                  <span className="artist-badge">
+                    {album.artistName} {album.nb_tracks ? `• ${album.nb_tracks} titres` : ''}
+                  </span>
                 </div>
                 <button className="artist-play-btn">
                   <Play className="play-icon-sm" /> Tester l'Album
