@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Volume2, VolumeX, Trophy, User, Music, HelpCircle } from 'lucide-react';
 import { soundFx } from '../services/soundEffects';
-import { getStoredPlayerName } from '../services/supabaseClient';
+import { getStoredPlayerProfile } from '../services/supabaseClient';
 
 interface NavbarProps {
   onOpenLeaderboard: () => void;
@@ -17,7 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth
 }) => {
   const [isMuted, setIsMuted] = useState(soundFx.getMuted());
-  const playerName = getStoredPlayerName();
+  const profile = getStoredPlayerProfile();
 
   const toggleSound = () => {
     const nextState = !isMuted;
@@ -47,17 +47,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Controls */}
         <div className="navbar-actions">
-          {/* User Profile Button */}
-          <div className="user-profile-btn">
-            <button
-              onClick={onOpenAuth}
-              className="profile-pill"
-              title="Mon Profil Joueur (Supabase)"
-            >
-              <User className="icon-sm text-cyan" />
-              <span className="player-name-display">{playerName}</span>
-            </button>
-          </div>
+          {/* User Profile Button (Compact Icon) */}
+          <button
+            onClick={onOpenAuth}
+            className={`nav-btn icon-only-btn profile-icon-btn ${profile ? 'has-profile' : ''}`}
+            title={profile ? `Joueur : ${profile.username}` : "S'inscrire / Se connecter"}
+            aria-label="Profil Joueur"
+          >
+            <User className="icon-sm text-cyan" />
+            {profile && <span className="profile-status-dot" />}
+          </button>
 
           {/* Leaderboard Button */}
           <button

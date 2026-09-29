@@ -21,7 +21,7 @@ export const App: React.FC = () => {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isGameModeModalOpen, setIsGameModeModalOpen] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(!getStoredPlayerProfile());
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const handleSelectTheme = (theme: CategoryTheme) => {
     setSelectedTheme(theme);
