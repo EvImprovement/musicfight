@@ -515,24 +515,20 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
           {!isHost && (
             <div className="guest-lobby-overlay">
               <div className="guest-overlay-card">
-                <div className="guest-overlay-spinner-box">
-                  <Loader2 className="guest-overlay-spinner text-cyan" />
-                  <span className="guest-overlay-pulse-ring" />
+                <div className="guest-spinner-wrapper">
+                  <div className="guest-custom-spinner" />
                 </div>
                 <h4 className="guest-overlay-title">L'hôte configure la partie...</h4>
                 <p className="guest-overlay-desc">
-                  Préparation des morceaux et des options en cours.
+                  Le blind test débutera dès que l'hôte aura lancé la partie.
                 </p>
-                <div className="guest-overlay-summary">
-                  <div className="guest-summary-pill theme">
-                    <span className="guest-summary-icon">{settings.themeIcon}</span>
-                    <span className="guest-summary-text">{settings.themeName}</span>
-                  </div>
-                  <div className="guest-summary-pill">
-                    <span>{settings.trackCount} titres</span>
-                    <span>•</span>
-                    <span>{settings.gameplayMode === 'buzzer' ? '⚡ Buzzer Express' : '🏆 Classique'}</span>
-                  </div>
+                <div className="guest-overlay-summary-pill">
+                  <span className="guest-pill-icon">{settings.themeIcon}</span>
+                  <span className="guest-pill-theme">{settings.themeName}</span>
+                  <span className="guest-pill-sep">•</span>
+                  <span className="guest-pill-mode">
+                    {settings.trackCount} titres • {settings.gameplayMode === 'buzzer' ? '⚡ Buzzer Express' : '🏆 Classique'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -817,9 +813,9 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
             </div>
           )}
 
-          {/* Bottom Action Button */}
-          <div className="lobby-launch-footer">
-            {isHost ? (
+          {/* Bottom Action Button (Host only) */}
+          {isHost && (
+            <div className="lobby-launch-footer">
               <button
                 className="btn-primary lobby-start-btn"
                 onClick={handleHostLaunchGame}
@@ -835,13 +831,8 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
                   </>
                 )}
               </button>
-            ) : (
-              <div className="guest-waiting-indicator">
-                <Loader2 className="spinner-icon text-cyan" />
-                <span>En attente que l'hôte lance la partie...</span>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

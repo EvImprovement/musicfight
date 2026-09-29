@@ -760,19 +760,31 @@ button:active {
 }
 
 .spinner-icon {
-  position: absolute;
-  right: 1.2rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  color: var(--accent-cyan);
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
   animation: spin 1s linear infinite;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 @keyframes spin {
-  from { transform: translateY(-50%) rotate(0deg); }
-  to { transform: translateY(-50%) rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.search-bar-wrapper .spinner-icon {
+  position: absolute;
+  right: 1.2rem;
+  top: 50%;
+  margin-top: -10px;
+  width: 20px;
+  height: 20px;
+  color: var(--accent-cyan);
 }
 
 .artist-results-grid {
@@ -2822,7 +2834,7 @@ button:active {
   position: absolute;
   inset: 0;
   z-index: 25;
-  background: rgba(10, 14, 26, 0.78);
+  background: rgba(10, 14, 26, 0.82);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -2843,33 +2855,25 @@ button:active {
   width: 100%;
 }
 
-.guest-overlay-spinner-box {
-  position: relative;
-  width: 60px;
-  height: 60px;
+.guest-spinner-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.25rem;
 }
 
-.guest-overlay-spinner {
-  width: 44px;
-  height: 44px;
-  animation: spin 1.2s linear infinite;
-  filter: drop-shadow(0 0 14px rgba(0, 242, 254, 0.7));
-}
-
-.guest-overlay-pulse-ring {
-  position: absolute;
-  inset: 0;
+.guest-custom-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3.5px solid rgba(0, 242, 254, 0.15);
+  border-top-color: var(--accent-cyan);
   border-radius: 50%;
-  border: 2px solid rgba(0, 242, 254, 0.4);
-  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  animation: spin 0.9s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
+  box-shadow: 0 0 16px rgba(0, 242, 254, 0.3);
 }
 
 .guest-overlay-title {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: #fff;
   margin: 0 0 0.45rem;
@@ -2877,46 +2881,49 @@ button:active {
 }
 
 .guest-overlay-desc {
-  font-size: 0.84rem;
+  font-size: 0.86rem;
   color: var(--text-secondary);
   line-height: 1.4;
   margin: 0 0 1.2rem;
 }
 
-.guest-overlay-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.guest-summary-pill {
+.guest-overlay-summary-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.55rem 0.95rem;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid var(--border-glass);
-  border-radius: 20px;
-  font-size: 0.82rem;
+  padding: 0.55rem 1rem;
+  background: rgba(0, 242, 254, 0.1);
+  border: 1px solid rgba(0, 242, 254, 0.35);
+  border-radius: 25px;
+  font-size: 0.84rem;
   font-weight: 700;
-  color: var(--text-primary);
-}
-
-.guest-summary-pill.theme {
-  background: rgba(0, 242, 254, 0.12);
-  border-color: rgba(0, 242, 254, 0.4);
   color: #fff;
+  max-width: 100%;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-.guest-summary-icon {
+.guest-pill-icon {
   font-size: 1.1rem;
 }
 
-.guest-summary-text {
-  font-weight: 800;
+.guest-pill-theme {
   color: var(--accent-cyan);
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.guest-pill-sep {
+  opacity: 0.4;
+}
+
+.guest-pill-mode {
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .lobby-players-list {
@@ -4174,7 +4181,7 @@ button:active {
   }
 
   .settings-panel {
-    min-height: 420px;
+    min-height: 440px;
   }
 
   .guest-lobby-overlay {
@@ -4182,20 +4189,22 @@ button:active {
   }
 
   .guest-overlay-card {
-    max-width: 290px;
+    max-width: 300px;
   }
 
   .guest-overlay-title {
-    font-size: 1.08rem;
+    font-size: 1.12rem;
   }
 
   .guest-overlay-desc {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
   }
 
-  .guest-summary-pill {
-    padding: 0.45rem 0.75rem;
-    font-size: 0.76rem;
+  .guest-overlay-summary-pill {
+    padding: 0.45rem 0.8rem;
+    font-size: 0.78rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .lobby-album-name {
@@ -4204,19 +4213,6 @@ button:active {
 
   .lobby-album-artist {
     font-size: 0.65rem;
-  }
-
-  .guest-waiting-indicator {
-    padding: 1.5rem 1rem;
-    text-align: center;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .guest-waiting-indicator .spinner-icon {
-    width: 2.2rem;
-    height: 2.2rem;
-    margin: 0 auto;
   }
 
   /* Multiplayer Gameboard Header & Mini Leaderboard */
