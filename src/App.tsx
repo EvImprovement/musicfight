@@ -21,7 +21,8 @@ import type {
   LocalPlayerState,
   RoomPlayer,
   RoomSettings,
-  Track
+  Track,
+  Option
 } from './types/game';
 
 export const App: React.FC = () => {
@@ -48,6 +49,13 @@ export const App: React.FC = () => {
   const [roomTracks, setRoomTracks] = useState<Track[]>([]);
   const [roomDistractorPool, setRoomDistractorPool] = useState<Track[]>([]);
   const [roomFinalPlayers, setRoomFinalPlayers] = useState<RoomPlayer[]>([]);
+  const [roomInitialQuestion, setRoomInitialQuestion] = useState<{
+    questionIndex: number;
+    startTime: number;
+    correctOptionId: string | number;
+    correctOption: Option;
+    options: Option[];
+  } | null>(null);
 
   // Check URL query parameters for invite links (e.g. ?room=MF-482)
   useEffect(() => {
@@ -117,6 +125,7 @@ export const App: React.FC = () => {
           setRoomSettings(event.settings);
           setRoomTracks(event.tracks);
           setRoomDistractorPool(event.distractorPool);
+          setRoomInitialQuestion(event.initialQuestion || null);
           setView('room_game');
         } else if (event.type === 'RETURN_TO_LOBBY') {
           setView('room_lobby');
@@ -137,11 +146,19 @@ export const App: React.FC = () => {
   const handleHostStartRoomGame = (
     settings: RoomSettings,
     tracks: Track[],
-    distractorPool: Track[]
+    distractorPool: Track[],
+    initialQuestion?: {
+      questionIndex: number;
+      startTime: number;
+      correctOptionId: string | number;
+      correctOption: Option;
+      options: Option[];
+    }
   ) => {
     setRoomSettings(settings);
     setRoomTracks(tracks);
     setRoomDistractorPool(distractorPool);
+    setRoomInitialQuestion(initialQuestion || null);
     setView('room_game');
   };
 
@@ -155,6 +172,7 @@ export const App: React.FC = () => {
       roomManager.leaveRoom();
       setRoomManager(null);
     }
+    setRoomInitialQuestion(null);
     setView('selector');
   };
 
@@ -215,6 +233,7 @@ export const App: React.FC = () => {
             tracks={roomTracks}
             distractorPool={roomDistractorPool}
             players={roomPlayers}
+            initialQuestion={roomInitialQuestion}
             onFinishGame={handleRoomFinishGame}
             onQuitGame={handleLeaveRoom}
           />

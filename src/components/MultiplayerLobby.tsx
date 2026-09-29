@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Users, Crown, Copy, Check, Share2, Play, LogOut, Loader2, Music2, ShieldAlert } from 'lucide-react';
-import type { RoomPlayer, RoomSettings, CategoryTheme, Track } from '../types/game';
+import type { RoomPlayer, RoomSettings, CategoryTheme, Track, Option } from '../types/game';
 import { PRESET_THEMES, getPlaylistTracks } from '../services/deezerApi';
 import type { MultiplayerRoomManager } from '../services/multiplayerRoom';
 
@@ -8,7 +8,18 @@ interface MultiplayerLobbyProps {
   manager: MultiplayerRoomManager;
   players: RoomPlayer[];
   initialSettings?: RoomSettings;
-  onStartGame: (settings: RoomSettings, tracks: Track[], distractorPool: Track[]) => void;
+  onStartGame: (
+    settings: RoomSettings,
+    tracks: Track[],
+    distractorPool: Track[],
+    initialQuestion?: {
+      questionIndex: number;
+      startTime: number;
+      correctOptionId: string | number;
+      correctOption: Option;
+      options: Option[];
+    }
+  ) => void;
   onLeaveRoom: () => void;
 }
 
@@ -112,19 +123,49 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
       }
 
       const shuffled = [...selectedTracks].sort(() => Math.random() - 0.5).slice(0, settings.trackCount);
-      const startTimestamp = Date.now() + 3500; // 3.5s countdown
+      const startTimestamp = Date.now() + 3500; // 3.5s synchronized countdown
 
-      // Broadcast start event to all guests
+      // Prepare Question 0 immediately so both Host and Guests start synchronously
+      const track0 = shuffled[0];
+      const otherTracks = distractors.filter(t => t.id !== track0.id && t.title !== track0.title);
+      const shuffledOthers = [...otherTracks].sort(() => Math.random() - 0.5).slice(0, 3);
+
+      const correctOpt: Option = {
+        id: track0.id,
+        title: track0.title,
+        artistName: track0.artist.name,
+        isTrackTitle: true
+      };
+
+      const distractorOpts: Option[] = shuffledOthers.map((t, idx) => ({
+        id: `dist_${idx}_${t.id}`,
+        title: t.title,
+        artistName: t.artist.name,
+        isTrackTitle: true
+      }));
+
+      const options = [correctOpt, ...distractorOpts].sort(() => Math.random() - 0.5);
+
+      const initialQuestion = {
+        questionIndex: 0,
+        startTime: startTimestamp,
+        correctOptionId: correctOpt.id,
+        correctOption: correctOpt,
+        options
+      };
+
+      // Broadcast start event to all guests with Question 0 included
       await manager.sendEvent({
         type: 'GAME_STARTING',
         settings,
         tracks: shuffled,
         distractorPool: distractors,
-        startTimestamp
+        startTimestamp,
+        initialQuestion
       });
 
       // Launch locally on host
-      onStartGame(settings, shuffled, distractors);
+      onStartGame(settings, shuffled, distractors, initialQuestion);
     } catch (err) {
       console.error(err);
       setStartError("Erreur réseau lors de la récupération des morceaux.");

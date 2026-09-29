@@ -110,7 +110,20 @@ export interface RoomSettings {
 
 export type RoomBroadcastEvent =
   | { type: 'SETTINGS_UPDATE'; settings: RoomSettings }
-  | { type: 'GAME_STARTING'; settings: RoomSettings; tracks: Track[]; distractorPool: Track[]; startTimestamp: number }
+  | {
+      type: 'GAME_STARTING';
+      settings: RoomSettings;
+      tracks: Track[];
+      distractorPool: Track[];
+      startTimestamp: number;
+      initialQuestion?: {
+        questionIndex: number;
+        startTime: number;
+        correctOptionId: string | number;
+        correctOption: Option;
+        options: Option[];
+      };
+    }
   | { type: 'QUESTION_START'; questionIndex: number; startTime: number; correctOptionId: string | number; options: Option[] }
   | { type: 'PLAYER_BUZZ'; playerId: string; playerName: string; optionId: string | number; responseTimeMs: number }
   | { type: 'ROUND_RESULT'; winnerPlayerId?: string; winnerName?: string; pointsGained: number; correctOption: Option; track: Track; updatedScores: Record<string, number> }

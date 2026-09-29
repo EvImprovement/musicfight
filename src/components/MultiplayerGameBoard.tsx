@@ -13,6 +13,13 @@ interface MultiplayerGameBoardProps {
   tracks: Track[];
   distractorPool: Track[];
   players: RoomPlayer[];
+  initialQuestion?: {
+    questionIndex: number;
+    startTime: number;
+    correctOptionId: string | number;
+    correctOption: Option;
+    options: Option[];
+  } | null;
   onFinishGame: (finalPlayers: RoomPlayer[]) => void;
   onQuitGame: () => void;
 }
@@ -23,6 +30,7 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
   tracks,
   distractorPool,
   players: initialPlayers,
+  initialQuestion,
   onFinishGame,
   onQuitGame
 }) => {
@@ -335,22 +343,34 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
     handleStartQuestionLocally(index, options, correctOpt, startTime);
   }, [tracks, distractorPool, manager, onFinishGame, handleStartQuestionLocally]);
 
-  // Host initiates first round ONCE on mount
+  // Initialize Question 0 on mount for BOTH Host and Guests
   useEffect(() => {
-    if (manager.isHost && !hasStartedGameRef.current && tracks.length > 0) {
+    if (initialQuestion && !hasStartedGameRef.current) {
+      hasStartedGameRef.current = true;
+      handleStartQuestionLocally(
+        initialQuestion.questionIndex,
+        initialQuestion.options,
+        initialQuestion.correctOption,
+        initialQuestion.startTime
+      );
+    } else if (manager.isHost && !hasStartedGameRef.current && tracks.length > 0) {
       hasStartedGameRef.current = true;
       const initTimer = setTimeout(() => {
         startQuestionRound(0);
-      }, 500);
+      }, 800);
       return () => clearTimeout(initTimer);
     }
-  }, [manager.isHost, tracks.length, startQuestionRound]);
+  }, [initialQuestion, manager.isHost, tracks.length, handleStartQuestionLocally, startQuestionRound]);
 
   // Listen to network events from room
   useEffect(() => {
     const handleEvent = (event: RoomBroadcastEvent) => {
       switch (event.type) {
         case 'QUESTION_START':
+          // Avoid duplicate start if already initialized via initialQuestion
+          if (event.questionIndex === currentIndexRef.current && stageRef.current !== 'countdown') {
+            return;
+          }
           handleStartQuestionLocally(
             event.questionIndex,
             event.options,

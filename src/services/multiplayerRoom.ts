@@ -129,10 +129,18 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
     .on('presence', { event: 'join' }, handlePresenceChange)
     .on('presence', { event: 'leave' }, handlePresenceChange);
 
+  let lastQuestionStartEvent: RoomBroadcastEvent | null = null;
+
   // Listen to Broadcasts
   channel.on('broadcast', { event: 'ROOM_EVENT' }, (envelope: any) => {
     if (envelope && envelope.payload) {
       const event = envelope.payload as RoomBroadcastEvent;
+      if (event.type === 'QUESTION_START') {
+        lastQuestionStartEvent = event;
+      } else if (event.type === 'GAME_OVER' || event.type === 'RETURN_TO_LOBBY') {
+        lastQuestionStartEvent = null;
+      }
+
       eventListeners.forEach(listener => {
         try {
           listener(event);
@@ -196,6 +204,13 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
           },
           subscribeEvents: (callback: (event: RoomBroadcastEvent) => void) => {
             eventListeners.add(callback);
+            if (lastQuestionStartEvent) {
+              try {
+                callback(lastQuestionStartEvent);
+              } catch (err) {
+                console.error('Failed to replay buffered QUESTION_START:', err);
+              }
+            }
             return () => {
               eventListeners.delete(callback);
             };
