@@ -99,6 +99,12 @@ export const App: React.FC = () => {
       roomManager.leaveRoom();
       setRoomManager(null);
     }
+    setRoomSettings(null);
+    setRoomTracks([]);
+    setRoomDistractorPool([]);
+    setRoomPlayers([]);
+    setRoomFinalPlayers([]);
+    setRoomInitialQuestion(null);
     setSelectedTheme(null);
     setGameSettings(null);
     setGameStats(null);
@@ -111,6 +117,16 @@ export const App: React.FC = () => {
     avatar: string,
     isHost: boolean
   ): Promise<boolean> => {
+    // When creating a new room as host, ensure no stale settings from previous rooms carry over
+    if (isHost) {
+      setRoomSettings(null);
+      setRoomTracks([]);
+      setRoomDistractorPool([]);
+      setRoomPlayers([]);
+      setRoomFinalPlayers([]);
+      setRoomInitialQuestion(null);
+    }
+
     const mgr = await connectToMultiplayerRoom({
       roomCode,
       name: playerName,
@@ -173,6 +189,11 @@ export const App: React.FC = () => {
       roomManager.leaveRoom();
       setRoomManager(null);
     }
+    setRoomSettings(null);
+    setRoomTracks([]);
+    setRoomDistractorPool([]);
+    setRoomPlayers([]);
+    setRoomFinalPlayers([]);
     setRoomInitialQuestion(null);
     setView('selector');
   };

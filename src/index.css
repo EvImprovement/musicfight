@@ -3508,6 +3508,11 @@ button:active {
   animation: fadeIn 0.25s ease-out;
 }
 
+.lobby-active-album-card.empty-album-selection {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
 .lobby-active-album-cover {
   width: 48px;
   height: 48px;

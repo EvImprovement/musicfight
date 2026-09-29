@@ -42,13 +42,16 @@ interface MultiplayerLobbyProps {
 }
 
 const DEFAULT_SETTINGS: RoomSettings = {
-  themeId: 'rap-fr',
-  themeName: 'Rap Français',
-  themeIcon: '🎙️',
+  themeId: '',
+  themeName: '',
+  themeIcon: '🎵',
   themeColor: 'linear-gradient(135deg, #8e2de2, #4a00e0)',
+  themeType: 'playlist',
+  themeIds: [],
   trackCount: 10,
   timePerTrack: 10,
-  gameplayMode: 'buzzer'
+  gameplayMode: 'buzzer',
+  albums: []
 };
 
 export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
@@ -58,7 +61,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
   onStartGame,
   onLeaveRoom
 }) => {
-  const [settings, setSettings] = useState<RoomSettings>(initialSettings || DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<RoomSettings>(() => initialSettings || DEFAULT_SETTINGS);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -99,6 +102,16 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
     return unsub;
   }, [manager]);
 
+  // Synchronize settings to newly joined players
+  useEffect(() => {
+    if (isHost && players.length > 1 && (settings.themeName || (settings.themeIds && settings.themeIds.length > 0) || (settings.albums && settings.albums.length > 0))) {
+      manager.sendEvent({
+        type: 'SETTINGS_UPDATE',
+        settings
+      });
+    }
+  }, [players.length, isHost]);
+
   // Debounced search for albums
   useEffect(() => {
     if (!albumQuery.trim() || themeTab !== 'albums') {
@@ -137,28 +150,25 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
     setThemeTab('presets');
     setStartError(null);
 
-    // If currently on album mode, switch cleanly back to presets
-    if (settings.themeType === 'album' || settings.themeId.startsWith('album-')) {
-      const defaultTheme = PRESET_THEMES[0];
-      const next: RoomSettings = {
-        ...settings,
-        themeId: defaultTheme.id,
-        themeIds: [defaultTheme.id],
-        themeType: defaultTheme.type,
-        themeName: defaultTheme.name,
-        themeIcon: defaultTheme.icon,
-        themeColor: defaultTheme.color,
-        albumId: undefined,
-        albumArtist: undefined,
-        albumCover: undefined,
-        albums: undefined
-      };
-      setSettings(next);
-      manager.sendEvent({
-        type: 'SETTINGS_UPDATE',
-        settings: next
-      });
-    }
+    // Clean reset so no previous album or stale selections linger
+    const next: RoomSettings = {
+      ...settings,
+      themeId: '',
+      themeIds: [],
+      themeType: 'playlist',
+      themeName: '',
+      themeIcon: '🎵',
+      themeColor: 'linear-gradient(135deg, #8e2de2, #4a00e0)',
+      albumId: undefined,
+      albumArtist: undefined,
+      albumCover: undefined,
+      albums: []
+    };
+    setSettings(next);
+    manager.sendEvent({
+      type: 'SETTINGS_UPDATE',
+      settings: next
+    });
   };
 
   const switchToAlbums = () => {
@@ -166,45 +176,61 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
     setThemeTab('albums');
     setStartError(null);
 
-    // If currently on presets, switch to albums and pre-select the first popular album
-    if (settings.themeType !== 'album') {
-      const defaultAlbum = POPULAR_ALBUMS[0];
+    // Clean reset with NOTHING selected by default (no auto-selection)
+    const next: RoomSettings = {
+      ...settings,
+      themeId: 'album-none',
+      themeIds: [],
+      themeType: 'album',
+      themeName: '',
+      themeIcon: '💿',
+      themeColor: 'linear-gradient(135deg, #11998e, #38ef7d)',
+      albumId: undefined,
+      albumArtist: undefined,
+      albumCover: undefined,
+      albums: []
+    };
+    setSettings(next);
+    manager.sendEvent({
+      type: 'SETTINGS_UPDATE',
+      settings: next
+    });
+  };
+
+  const selectTheme = (theme: CategoryTheme) => {
+    if (!isHost) return;
+    setStartError(null);
+    const currentThemeIds = (settings.themeType !== 'album' && settings.themeIds)
+      ? settings.themeIds
+      : (settings.themeId ? [settings.themeId] : []);
+    let nextThemeIds: string[];
+
+    if (currentThemeIds.includes(theme.id)) {
+      // Toggle off
+      nextThemeIds = currentThemeIds.filter(id => id !== theme.id);
+    } else {
+      nextThemeIds = [...currentThemeIds, theme.id];
+    }
+
+    if (nextThemeIds.length === 0) {
       const next: RoomSettings = {
         ...settings,
-        themeId: `album-${defaultAlbum.id}`,
-        themeIds: [`album-${defaultAlbum.id}`],
-        themeType: 'album',
-        themeName: `${defaultAlbum.title} • ${defaultAlbum.artistName}`,
-        themeIcon: '💿',
-        themeColor: 'linear-gradient(135deg, #11998e, #38ef7d)',
-        albumId: defaultAlbum.id,
-        albumArtist: defaultAlbum.artistName,
-        albumCover: defaultAlbum.cover,
-        albums: [defaultAlbum]
+        themeId: '',
+        themeIds: [],
+        themeType: 'playlist',
+        themeName: '',
+        themeIcon: '🎵',
+        albumId: undefined,
+        albumArtist: undefined,
+        albumCover: undefined,
+        albums: []
       };
       setSettings(next);
       manager.sendEvent({
         type: 'SETTINGS_UPDATE',
         settings: next
       });
-    }
-  };
-
-  const selectTheme = (theme: CategoryTheme) => {
-    if (!isHost) return;
-    setStartError(null);
-    const currentThemeIds = (settings.themeType !== 'album' && settings.themeIds) ? settings.themeIds : [settings.themeId];
-    let nextThemeIds: string[];
-
-    if (currentThemeIds.includes(theme.id)) {
-      // If clicking already selected theme and more than 1 selected, toggle it off
-      if (currentThemeIds.length > 1) {
-        nextThemeIds = currentThemeIds.filter(id => id !== theme.id);
-      } else {
-        return;
-      }
-    } else {
-      nextThemeIds = (settings.themeType === 'album') ? [theme.id] : [...currentThemeIds, theme.id];
+      return;
     }
 
     const selectedThemes = PRESET_THEMES.filter(t => nextThemeIds.includes(t.id));
@@ -221,7 +247,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
       albumId: undefined,
       albumArtist: undefined,
       albumCover: undefined,
-      albums: undefined
+      albums: []
     };
     setSettings(next);
     manager.sendEvent({
@@ -250,13 +276,31 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
     let nextAlbums: typeof currentAlbums;
 
     if (isAlreadySelected) {
-      if (currentAlbums.length > 1) {
-        nextAlbums = currentAlbums.filter(a => String(a.id) !== String(album.id));
-      } else {
-        return;
-      }
+      nextAlbums = currentAlbums.filter(a => String(a.id) !== String(album.id));
     } else {
       nextAlbums = [...currentAlbums, album];
+    }
+
+    if (nextAlbums.length === 0) {
+      const next: RoomSettings = {
+        ...settings,
+        themeId: 'album-none',
+        themeIds: [],
+        themeType: 'album',
+        themeName: '',
+        themeIcon: '💿',
+        themeColor: 'linear-gradient(135deg, #11998e, #38ef7d)',
+        albumId: undefined,
+        albumArtist: undefined,
+        albumCover: undefined,
+        albums: []
+      };
+      setSettings(next);
+      manager.sendEvent({
+        type: 'SETTINGS_UPDATE',
+        settings: next
+      });
+      return;
     }
 
     const isMulti = nextAlbums.length > 1;
@@ -296,8 +340,23 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const isAlbumMode = themeTab === 'albums' || settings.themeType === 'album';
+  const hasValidSelection = isAlbumMode
+    ? Boolean(settings.albums && settings.albums.length > 0)
+    : Boolean((settings.themeIds && settings.themeIds.length > 0) || (settings.themeId && settings.themeId !== ''));
+
   const handleHostLaunchGame = async () => {
     if (!isHost || isStarting) return;
+
+    if (!hasValidSelection) {
+      setStartError(
+        isAlbumMode
+          ? "Veuillez sélectionner au moins un album pour lancer la partie."
+          : "Veuillez sélectionner au moins un thème pour lancer la partie."
+      );
+      return;
+    }
+
     setIsStarting(true);
     setStartError(null);
 
@@ -308,12 +367,20 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
       if (settings.themeType === 'album' || settings.themeId.startsWith('album-')) {
         const albumsToFetch = (settings.albums && settings.albums.length > 0)
           ? settings.albums
-          : [{
-              id: settings.albumId || settings.themeId.replace('album-', ''),
-              title: settings.themeName.split(' • ')[0] || settings.themeName,
-              artistName: settings.albumArtist || '',
-              cover: settings.albumCover
-            }];
+          : (settings.albumId
+              ? [{
+                  id: settings.albumId,
+                  title: settings.themeName.split(' • ')[0] || settings.themeName,
+                  artistName: settings.albumArtist || '',
+                  cover: settings.albumCover
+                }]
+              : []);
+
+        if (albumsToFetch.length === 0) {
+          setStartError("Veuillez sélectionner au moins un album pour lancer la partie.");
+          setIsStarting(false);
+          return;
+        }
 
         const albumTracksPromises = albumsToFetch.map(a =>
           getAlbumTracks(a.id, a.title, a.artistName, a.cover)
@@ -351,8 +418,22 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
           } catch (_) {}
         }
       } else {
-        const currentThemeIds = settings.themeIds || [settings.themeId];
+        const currentThemeIds = (settings.themeIds && settings.themeIds.length > 0)
+          ? settings.themeIds
+          : (settings.themeId ? [settings.themeId] : []);
+
+        if (currentThemeIds.length === 0) {
+          setStartError("Veuillez sélectionner au moins un thème pour lancer la partie.");
+          setIsStarting(false);
+          return;
+        }
+
         const selectedThemes = PRESET_THEMES.filter(t => currentThemeIds.includes(t.id));
+        if (selectedThemes.length === 0) {
+          setStartError("Veuillez sélectionner au moins un thème pour lancer la partie.");
+          setIsStarting(false);
+          return;
+        }
 
         if (selectedThemes.length > 1) {
           // Multi-theme selection: combine playlists!
@@ -523,8 +604,8 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
                   Le blind test débutera dès que l'hôte aura lancé la partie.
                 </p>
                 <div className="guest-overlay-summary-pill">
-                  <span className="guest-pill-icon">{settings.themeIcon}</span>
-                  <span className="guest-pill-theme">{settings.themeName}</span>
+                  <span className="guest-pill-icon">{settings.themeIcon || '🎵'}</span>
+                  <span className="guest-pill-theme">{settings.themeName || 'Choix du thème en cours...'}</span>
                   <span className="guest-pill-sep">•</span>
                   <span className="guest-pill-mode">
                     {settings.trackCount} titres • {settings.gameplayMode === 'buzzer' ? '⚡ Buzzer Express' : '🏆 Classique'}
@@ -550,66 +631,103 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
                   {themeTab === 'presets'
                     ? (settings.themeIds && settings.themeIds.length > 1
                         ? `🔀 ${settings.themeIds.length} styles combinés`
-                        : '💡 Cliquez pour combiner plusieurs thèmes')
+                        : (settings.themeIds && settings.themeIds.length === 1
+                            ? `🎙️ ${settings.themeName}`
+                            : '👉 Choisissez un ou plusieurs thèmes'))
                     : (settings.albums && settings.albums.length > 1
                         ? `💿 ${settings.albums.length} albums combinés`
-                        : '💡 Cliquez pour combiner plusieurs albums')}
+                        : (settings.albums && settings.albums.length === 1
+                            ? `💿 ${settings.themeName}`
+                            : '👉 Choisissez un ou plusieurs albums'))}
                 </span>
               )}
             </div>
 
-            {/* Active Album Banner */}
-            {settings.themeType === 'album' && (
-              <div className="lobby-active-album-card">
-                {settings.albums && settings.albums.length > 1 ? (
-                  <div className="lobby-active-album-covers-stack">
-                    {settings.albums.slice(0, 3).map((alb, idx) => (
-                      <div
-                        key={alb.id}
-                        className="lobby-stacked-cover-wrapper"
-                        style={{ zIndex: 5 - idx, marginLeft: idx > 0 ? '-14px' : '0' }}
-                      >
-                        {alb.cover ? (
-                          <img
-                            src={alb.cover}
-                            alt={alb.title}
-                            className="lobby-stacked-cover"
-                            onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                          />
-                        ) : (
-                          <span className="lobby-stacked-fallback">💿</span>
-                        )}
-                      </div>
-                    ))}
-                    {settings.albums.length > 3 && (
-                      <span className="lobby-stacked-more">+{settings.albums.length - 3}</span>
-                    )}
-                  </div>
-                ) : (
-                  <div className="lobby-active-album-cover">
-                    {settings.albumCover ? (
-                      <img
-                        src={settings.albumCover}
-                        alt={settings.themeName}
-                        onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                      />
-                    ) : (
-                      <span>💿</span>
-                    )}
-                  </div>
-                )}
+            {/* Active Theme Placeholder (Presets mode with 0 selected) */}
+            {themeTab === 'presets' && (!settings.themeIds || settings.themeIds.length === 0) && (
+              <div className="lobby-active-album-card empty-album-selection">
+                <div className="lobby-active-album-cover">
+                  <span>🎵</span>
+                </div>
                 <div className="lobby-active-album-details">
-                  <span className="lobby-active-album-tag">
-                    {settings.albums && settings.albums.length > 1
-                      ? `💿 Mix d'albums (${settings.albums.length} sélectionnés)`
-                      : '💿 Album sélectionné'}
+                  <span className="lobby-active-album-tag" style={{ color: 'var(--accent-cyan)' }}>
+                    Aucun thème sélectionné
                   </span>
-                  <h4 className="lobby-active-album-title">{settings.themeName}</h4>
-                  {settings.albumArtist && (
-                    <span className="lobby-active-album-artist">{settings.albumArtist}</span>
-                  )}
+                  <h4 className="lobby-active-album-title" style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                    Cliquez sur un ou plusieurs thèmes ci-dessous pour composer la partie
+                  </h4>
                 </div>
               </div>
+            )}
+
+            {/* Active Album Banner (Albums mode) */}
+            {themeTab === 'albums' && (
+              settings.albums && settings.albums.length > 0 ? (
+                <div className="lobby-active-album-card">
+                  {settings.albums.length > 1 ? (
+                    <div className="lobby-active-album-covers-stack">
+                      {settings.albums.slice(0, 3).map((alb, idx) => (
+                        <div
+                          key={alb.id}
+                          className="lobby-stacked-cover-wrapper"
+                          style={{ zIndex: 5 - idx, marginLeft: idx > 0 ? '-14px' : '0' }}
+                        >
+                          {alb.cover ? (
+                            <img
+                              src={alb.cover}
+                              alt={alb.title}
+                              className="lobby-stacked-cover"
+                              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                            />
+                          ) : (
+                            <span className="lobby-stacked-fallback">💿</span>
+                          )}
+                        </div>
+                      ))}
+                      {settings.albums.length > 3 && (
+                        <span className="lobby-stacked-more">+{settings.albums.length - 3}</span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="lobby-active-album-cover">
+                      {settings.albumCover ? (
+                        <img
+                          src={settings.albumCover}
+                          alt={settings.themeName}
+                          onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                        />
+                      ) : (
+                        <span>💿</span>
+                      )}
+                    </div>
+                  )}
+                  <div className="lobby-active-album-details">
+                    <span className="lobby-active-album-tag">
+                      {settings.albums.length > 1
+                        ? `💿 Mix d'albums (${settings.albums.length} sélectionnés)`
+                        : '💿 Album sélectionné'}
+                    </span>
+                    <h4 className="lobby-active-album-title">{settings.themeName}</h4>
+                    {settings.albumArtist && (
+                      <span className="lobby-active-album-artist">{settings.albumArtist}</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="lobby-active-album-card empty-album-selection">
+                  <div className="lobby-active-album-cover">
+                    <span>💿</span>
+                  </div>
+                  <div className="lobby-active-album-details">
+                    <span className="lobby-active-album-tag" style={{ color: 'var(--accent-cyan)' }}>
+                      Aucun album sélectionné
+                    </span>
+                    <h4 className="lobby-active-album-title" style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                      Cliquez sur un ou plusieurs albums ci-dessous pour composer la partie
+                    </h4>
+                  </div>
+                </div>
+              )
             )}
 
             {/* Theme Tabs (Playlists vs Albums) */}
@@ -819,11 +937,19 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
               <button
                 className="btn-primary lobby-start-btn"
                 onClick={handleHostLaunchGame}
-                disabled={isStarting}
+                disabled={isStarting || !hasValidSelection}
+                style={{
+                  opacity: (!hasValidSelection || isStarting) ? 0.65 : 1,
+                  cursor: (!hasValidSelection || isStarting) ? 'not-allowed' : 'pointer'
+                }}
               >
                 {isStarting ? (
                   <>
                     <Loader2 className="spinner-icon" /> Chargement des titres...
+                  </>
+                ) : !hasValidSelection ? (
+                  <>
+                    <Play className="icon-sm" /> Sélectionnez au moins un {isAlbumMode ? 'album' : 'thème'}
                   </>
                 ) : (
                   <>
