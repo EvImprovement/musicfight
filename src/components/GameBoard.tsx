@@ -14,6 +14,18 @@ interface GameBoardProps {
   onQuitGame: () => void;
 }
 
+const preloadTrackCover = (track?: Track) => {
+  if (!track?.album) return;
+  const url = track.album.cover_medium || track.album.cover_big;
+  if (url) {
+    const img = new Image();
+    img.src = url;
+    if (img.decode) {
+      img.decode().catch(() => {});
+    }
+  }
+};
+
 export const GameBoard: React.FC<GameBoardProps> = ({
   theme,
   settings,
@@ -127,6 +139,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           setTracks(shuffled);
           setDistractorPool(distractors);
           setIsLoading(false);
+
+          // Preload initial covers immediately
+          shuffled.slice(0, 5).forEach(preloadTrackCover);
         }
       } catch (err) {
         if (isMounted) {
@@ -197,6 +212,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     const currentTrack = trackList[index];
     if (!currentTrack) return;
+
+    // Preload current and next upcoming covers so reveal modal displays instantly (0ms lag)
+    [trackList[index], trackList[index + 1], trackList[index + 2]].forEach(preloadTrackCover);
+
+    // Warm up next track audio in background for zero buffering
+    if (trackList[index + 1]?.preview) {
+      const nextAudio = new Audio();
+      nextAudio.preload = 'auto';
+      nextAudio.src = trackList[index + 1].preview;
+    }
 
     setSelectedOption(null);
     setIsAnswered(false);
@@ -615,9 +640,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
                 <div className="reveal-track-details">
                   <img
-                    src={currentTrack.album.cover_big || currentTrack.album.cover_medium || theme.coverUrl}
+                    src={currentTrack.album.cover_medium || currentTrack.album.cover_big || theme.coverUrl}
                     alt={currentTrack.title}
                     className="reveal-album-cover"
+                    width={120}
+                    height={120}
+                    loading="eager"
+                    decoding="sync"
                   />
                   <div className="reveal-track-meta">
                     <span className="reveal-track-label">C'était :</span>
