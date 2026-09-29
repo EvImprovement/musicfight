@@ -199,119 +199,146 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
 
   return new Promise((resolve) => {
     let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+    let isSettled = false;
+
+    const finish = (result: MultiplayerRoomManager | null) => {
+      if (isSettled) return;
+      isSettled = true;
+      if (globalTimeout) clearTimeout(globalTimeout);
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      resolve(result);
+    };
+
+    // Absolute safety timeout: guarantees promise settles within 6s under any network condition
+    const globalTimeout = setTimeout(() => {
+      console.warn(`[Multiplayer] Room connection timed out for "${cleanCode}".`);
+      onConnectionStatus?.('error');
+      try {
+        client.removeChannel(channel);
+      } catch (_) {}
+      finish(null);
+    }, 6000);
 
     channel.subscribe(async (status: string) => {
-      if (status === 'SUBSCRIBED') {
-        // If joining as guest, verify that the room exists and has an active Host
-        if (!isHost) {
-          // Send instant PING broadcast to see if host is alive
-          channel.send({
-            type: 'broadcast',
-            event: 'ROOM_PING',
-            payload: { guestId: myPlayerId }
-          }).catch(() => {});
+      try {
+        if (status === 'SUBSCRIBED') {
+          // If joining as guest, verify that the room exists and has an active Host
+          if (!isHost) {
+            // Send instant PING broadcast to see if host is alive
+            channel.send({
+              type: 'broadcast',
+              event: 'ROOM_PING',
+              payload: { guestId: myPlayerId }
+            }).catch(() => {});
 
-          if (!checkHasActiveHost(channel.presenceState())) {
-            const confirmed = await new Promise<boolean>((resolveHostCheck) => {
-              onHostConfirmed = () => {
-                if (timeoutTimer) clearTimeout(timeoutTimer);
-                resolveHostCheck(true);
-              };
-
-              timeoutTimer = setTimeout(() => {
-                if (checkHasActiveHost(channel.presenceState())) {
+            if (!checkHasActiveHost(channel.presenceState())) {
+              const confirmed = await new Promise<boolean>((resolveHostCheck) => {
+                onHostConfirmed = () => {
+                  if (timeoutTimer) clearTimeout(timeoutTimer);
                   resolveHostCheck(true);
-                } else {
-                  resolveHostCheck(false);
-                }
-              }, 2500);
-            });
+                };
 
-            if (!confirmed) {
-              console.warn(`[Multiplayer] Room "${cleanCode}" does not exist or has no active host.`);
-              onConnectionStatus?.('error');
-              try {
-                await client.removeChannel(channel);
-              } catch (_) {}
-              resolve(null);
-              return;
-            }
-          }
-
-          roomEstablished = true;
-        }
-
-        onConnectionStatus?.('connected');
-
-        // Track our presence
-        await channel.track({
-          id: myPlayerId,
-          name,
-          avatar,
-          isHost,
-          score: 0,
-          streak: 0,
-          isReady: true,
-          joinedAt: Date.now()
-        });
-
-        roomManager = {
-          channel,
-          roomCode: cleanCode,
-          myPlayerId,
-          isHost,
-          sendEvent: async (event: RoomBroadcastEvent) => {
-            try {
-              await channel.send({
-                type: 'broadcast',
-                event: 'ROOM_EVENT',
-                payload: event
+                timeoutTimer = setTimeout(() => {
+                  if (checkHasActiveHost(channel.presenceState())) {
+                    resolveHostCheck(true);
+                  } else {
+                    resolveHostCheck(false);
+                  }
+                }, 2500);
               });
-            } catch (err) {
-              console.error('Failed to broadcast room event:', err);
-            }
-          },
-          updateMyPresence: async (updates: Partial<RoomPlayer>) => {
-            try {
-              const current = currentPresenceState[myPlayerId]?.[0] || {};
-              await channel.track({
-                ...current,
-                ...updates,
-                id: myPlayerId
-              });
-            } catch (err) {
-              console.error('Failed to update presence:', err);
-            }
-          },
-          leaveRoom: async () => {
-            try {
-              await channel.untrack();
-              await client.removeChannel(channel);
-            } catch (_) {}
-          },
-          subscribeEvents: (callback: (event: RoomBroadcastEvent) => void) => {
-            eventListeners.add(callback);
-            if (lastQuestionStartEvent) {
-              try {
-                callback(lastQuestionStartEvent);
-              } catch (err) {
-                console.error('Failed to replay buffered QUESTION_START:', err);
+
+              if (!confirmed) {
+                console.warn(`[Multiplayer] Room "${cleanCode}" does not exist or has no active host.`);
+                onConnectionStatus?.('error');
+                try {
+                  await client.removeChannel(channel);
+                } catch (_) {}
+                finish(null);
+                return;
               }
             }
-            return () => {
-              eventListeners.delete(callback);
-            };
-          }
-        };
 
-        resolve(roomManager);
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        if (timeoutTimer) clearTimeout(timeoutTimer);
+            roomEstablished = true;
+          }
+
+          onConnectionStatus?.('connected');
+
+          // Track our presence
+          await channel.track({
+            id: myPlayerId,
+            name,
+            avatar,
+            isHost,
+            score: 0,
+            streak: 0,
+            isReady: true,
+            joinedAt: Date.now()
+          });
+
+          roomManager = {
+            channel,
+            roomCode: cleanCode,
+            myPlayerId,
+            isHost,
+            sendEvent: async (event: RoomBroadcastEvent) => {
+              try {
+                await channel.send({
+                  type: 'broadcast',
+                  event: 'ROOM_EVENT',
+                  payload: event
+                });
+              } catch (err) {
+                console.error('Failed to broadcast room event:', err);
+              }
+            },
+            updateMyPresence: async (updates: Partial<RoomPlayer>) => {
+              try {
+                const current = currentPresenceState[myPlayerId]?.[0] || {};
+                await channel.track({
+                  ...current,
+                  ...updates,
+                  id: myPlayerId
+                });
+              } catch (err) {
+                console.error('Failed to update presence:', err);
+              }
+            },
+            leaveRoom: async () => {
+              try {
+                await channel.untrack();
+                await client.removeChannel(channel);
+              } catch (_) {}
+            },
+            subscribeEvents: (callback: (event: RoomBroadcastEvent) => void) => {
+              eventListeners.add(callback);
+              if (lastQuestionStartEvent) {
+                try {
+                  callback(lastQuestionStartEvent);
+                } catch (err) {
+                  console.error('Failed to replay buffered QUESTION_START:', err);
+                }
+              }
+              return () => {
+                eventListeners.delete(callback);
+              };
+            }
+          };
+
+          finish(roomManager);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          onConnectionStatus?.('error');
+          try {
+            await client.removeChannel(channel);
+          } catch (_) {}
+          finish(null);
+        }
+      } catch (err) {
+        console.error('[Multiplayer] Subscription error:', err);
         onConnectionStatus?.('error');
         try {
           await client.removeChannel(channel);
         } catch (_) {}
-        resolve(null);
+        finish(null);
       }
     });
   });

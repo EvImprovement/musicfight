@@ -24,17 +24,24 @@ export const MultiplayerHub: React.FC<MultiplayerHubProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
 
   const handleCreate = async () => {
+    if (isVerifying) return;
     const cleanName = playerName.trim() || 'Joueur' + Math.floor(Math.random() * 900 + 100);
     setStoredPlayerName(cleanName);
     const newCode = generateRoomCode();
     setIsVerifying(true);
     setErrorMsg(null);
-    await onJoinRoom(newCode, cleanName, selectedAvatar, true);
-    setIsVerifying(false);
+    try {
+      await onJoinRoom(newCode, cleanName, selectedAvatar, true);
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Erreur lors de la création du salon.");
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isVerifying) return;
     const cleanName = playerName.trim() || 'Joueur' + Math.floor(Math.random() * 900 + 100);
     const cleanCode = inputCode.trim().toUpperCase();
 
@@ -47,18 +54,22 @@ export const MultiplayerHub: React.FC<MultiplayerHubProps> = ({
     setIsVerifying(true);
     setErrorMsg(null);
 
-    const success = await onJoinRoom(cleanCode, cleanName, selectedAvatar, false);
-    setIsVerifying(false);
-
-    if (success === false) {
-      setErrorMsg(`Le salon "${cleanCode}" n'existe pas ou l'hôte s'est déconnecté.`);
+    try {
+      const success = await onJoinRoom(cleanCode, cleanName, selectedAvatar, false);
+      if (success === false) {
+        setErrorMsg(`Le salon "${cleanCode}" n'existe pas ou l'hôte s'est déconnecté.`);
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Erreur lors de la connexion au salon.");
+    } finally {
+      setIsVerifying(false);
     }
   };
 
   return (
     <div className="modal-backdrop">
       <div className="modal-card hub-modal-card">
-        <button className="modal-close-btn" onClick={onClose} aria-label="Fermer">
+        <button className="modal-close-btn" onClick={onClose} aria-label="Fermer" disabled={isVerifying}>
           <X className="icon-sm" />
         </button>
 
@@ -79,6 +90,7 @@ export const MultiplayerHub: React.FC<MultiplayerHubProps> = ({
                 <button
                   key={av}
                   type="button"
+                  disabled={isVerifying}
                   className={`avatar-option-btn ${selectedAvatar === av ? 'active' : ''}`}
                   onClick={() => setSelectedAvatar(av)}
                 >
@@ -96,6 +108,7 @@ export const MultiplayerHub: React.FC<MultiplayerHubProps> = ({
               value={playerName}
               maxLength={20}
               placeholder="Ex: Thomas, Léa, Alex..."
+              disabled={isVerifying}
               onChange={(e) => setPlayerName(e.target.value)}
             />
           </div>
@@ -106,14 +119,16 @@ export const MultiplayerHub: React.FC<MultiplayerHubProps> = ({
           <button
             type="button"
             className={`hub-tab-btn ${tab === 'create' ? 'active' : ''}`}
-            onClick={() => { setTab('create'); setErrorMsg(null); }}
+            disabled={isVerifying}
+            onClick={() => { if (!isVerifying) { setTab('create'); setErrorMsg(null); } }}
           >
             <Plus className="icon-xs" /> Créer un salon
           </button>
           <button
             type="button"
             className={`hub-tab-btn ${tab === 'join' ? 'active' : ''}`}
-            onClick={() => { setTab('join'); setErrorMsg(null); }}
+            disabled={isVerifying}
+            onClick={() => { if (!isVerifying) { setTab('join'); setErrorMsg(null); } }}
           >
             <KeyRound className="icon-xs" /> Rejoindre avec un code
           </button>
