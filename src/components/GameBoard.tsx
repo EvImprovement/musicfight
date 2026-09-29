@@ -247,15 +247,56 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const allOpts = [correctOpt, ...distractorOptions].sort(() => Math.random() - 0.5);
     setCurrentOptions(allOpts);
 
-    // Play preview audio
+    // Play preview audio with a randomized start time within the 30s Deezer preview
     if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = currentTrack.preview;
-      audioRef.current.currentTime = 0;
-      audioRef.current.volume = 1.0;
-      audioRef.current.muted = soundFx.getMuted();
+      const audio = audioRef.current;
+      audio.pause();
+      audio.src = currentTrack.preview;
+      audio.volume = 1.0;
 
-      const playPromise = audioRef.current.play();
+      // Deezer previews are 30s long. Leave a 2-second margin at the end so audio doesn't cut off before the question ends.
+      const maxStart = Math.max(0, Math.floor(30 - timePerTrack - 2));
+      const randomStart = maxStart > 0 ? Math.floor(Math.random() * (maxStart + 1)) : 0;
+
+      const userMuted = soundFx.getMuted();
+      let unmuted = false;
+      const unmuteAudio = () => {
+        if (unmuted) return;
+        unmuted = true;
+        if (!userMuted && audioRef.current) {
+          audioRef.current.muted = false;
+        }
+      };
+
+      // Mute briefly while seeking if randomStart > 0 to avoid 0.0s audio burst
+      if (!userMuted && randomStart > 0) {
+        audio.muted = true;
+      } else {
+        audio.muted = userMuted;
+      }
+
+      const applyStartTime = () => {
+        try {
+          if (randomStart > 0 && Math.abs(audio.currentTime - randomStart) > 0.5) {
+            audio.currentTime = randomStart;
+          }
+        } catch (_) {}
+
+        if (randomStart === 0) {
+          unmuteAudio();
+        }
+      };
+
+      audio.addEventListener('seeked', unmuteAudio, { once: true });
+      setTimeout(unmuteAudio, 350);
+
+      if (audio.readyState >= 1) {
+        applyStartTime();
+      } else {
+        audio.addEventListener('loadedmetadata', applyStartTime, { once: true });
+      }
+
+      const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
           setIsPlayingAudio(true);
