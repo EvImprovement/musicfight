@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, X, RefreshCw } from 'lucide-react';
-import { fetchLeaderboard } from '../services/supabaseClient';
+import { fetchLeaderboard, isSupabaseConnected } from '../services/supabaseClient';
 import type { LeaderboardEntry, GameModeType } from '../types/game';
 
 interface LeaderboardProps {
@@ -24,6 +24,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ onClose }) => {
     loadData(activeModeFilter);
   }, [activeModeFilter]);
 
+  const online = isSupabaseConnected();
+
   return (
     <div className="modal-backdrop">
       <div className="modal-card leaderboard-modal">
@@ -35,8 +37,19 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ onClose }) => {
           <div className="trophy-icon-wrapper">
             <Trophy className="icon-md text-gold" />
           </div>
-          <div>
-            <h2 className="modal-title">Classement des Mélomanes</h2>
+          <div className="leaderboard-title-col">
+            <div className="leaderboard-title-row">
+              <h2 className="modal-title">Classement des Mélomanes</h2>
+              {online ? (
+                <span className="connection-badge online" title="Connecté au cloud Supabase">
+                  🟢 En ligne (Supabase)
+                </span>
+              ) : (
+                <span className="connection-badge offline" title="Scores enregistrés localement sur cet appareil">
+                  💾 Local (Hors-ligne)
+                </span>
+              )}
+            </div>
             <p className="modal-sub">Les meilleurs joueurs de MusicFight</p>
           </div>
         </div>

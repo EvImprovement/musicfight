@@ -1,12 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
 import type { LeaderboardEntry, GameModeType } from '../types/game';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const rawSupabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+
+// Clean URL: automatically remove /rest/v1 or trailing slashes if accidentally included
+export const supabaseUrl = rawSupabaseUrl
+  .replace(/\/rest\/v1\/?$/i, '')
+  .replace(/\/rest\/?$/i, '')
+  .replace(/\/+$/, '');
 
 export const supabase = (supabaseUrl && supabaseAnonKey)
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
+
+export function isSupabaseConnected(): boolean {
+  return !!supabase;
+}
+
+if (supabase) {
+  console.log('🟢 [MusicFight] Connecté à Supabase :', supabaseUrl);
+} else {
+  console.info('ℹ️ [MusicFight] Supabase non configuré. Mode LocalStorage actif pour les scores.');
+}
 
 const LOCAL_SCORES_KEY = 'musicfight_leaderboard_v1';
 const LOCAL_USER_KEY = 'musicfight_user_name';

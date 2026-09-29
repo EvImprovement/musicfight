@@ -1683,6 +1683,42 @@ button:active {
   flex-shrink: 0;
 }
 
+.leaderboard-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.leaderboard-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.connection-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.connection-badge.online {
+  background: rgba(0, 230, 118, 0.15);
+  border: 1px solid rgba(0, 230, 118, 0.35);
+  color: var(--success-color);
+}
+
+.connection-badge.offline {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+}
+
 .modal-title { font-size: 1.35rem; font-weight: 800; }
 .modal-sub { font-size: 0.85rem; color: var(--text-secondary); }
 
