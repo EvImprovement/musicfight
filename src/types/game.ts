@@ -74,10 +74,11 @@ export interface CategoryTheme {
   name: string;
   description: string;
   icon: string;
-  type: 'playlist' | 'artist' | 'chart' | 'album';
+  type: 'playlist' | 'artist' | 'chart' | 'album' | 'mixed';
   deezerId?: number | string;
   secondaryDeezerId?: number | string;
   extraDeezerIds?: (number | string)[];
+  combinedThemes?: CategoryTheme[];
   query?: string;
   coverUrl?: string;
   color: string;
@@ -103,6 +104,7 @@ export interface RoomSettings {
   themeName: string;
   themeIcon: string;
   themeColor: string;
+  themeIds?: string[];
   trackCount: number;
   timePerTrack: number;
   gameplayMode: RoomGameplayMode;

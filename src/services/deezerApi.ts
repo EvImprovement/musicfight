@@ -330,6 +330,25 @@ export async function getAlbumTracks(albumId: number | string, albumTitle: strin
 
 // Fetch tracks for a playlist strictly from Deezer - loads 100-200+ top iconic tracks!
 export async function getPlaylistTracks(theme: CategoryTheme): Promise<Track[]> {
+  // If this is a combined / mixed multi-theme, fetch all sub-playlists concurrently
+  if (theme.type === 'mixed' && theme.combinedThemes && theme.combinedThemes.length > 0) {
+    const results = await Promise.all(
+      theme.combinedThemes.map(t => getPlaylistTracks(t))
+    );
+    const allCombined = results.flat();
+    const seen = new Set<string>();
+    const unique: Track[] = [];
+    for (const tr of allCombined) {
+      const key = `${tr.artist.name.toLowerCase().trim()}___${tr.title.toLowerCase().trim()}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(tr);
+      }
+    }
+    // Shuffle so songs from all chosen styles are well blended together
+    return unique.sort(() => Math.random() - 0.5);
+  }
+
   const allRawData: any[] = [];
 
   if (theme.type === 'chart') {

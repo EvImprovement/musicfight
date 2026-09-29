@@ -105,13 +105,12 @@ export const App: React.FC = () => {
     setView('selector');
   };
 
-  // Connect to a multiplayer room (as Host or Guest)
   const handleJoinMultiplayerRoom = async (
     roomCode: string,
     playerName: string,
     avatar: string,
     isHost: boolean
-  ) => {
+  ): Promise<boolean> => {
     const mgr = await connectToMultiplayerRoom({
       roomCode,
       name: playerName,
@@ -139,7 +138,9 @@ export const App: React.FC = () => {
       setRoomManager(mgr);
       setIsMultiplayerHubOpen(false);
       setView('room_lobby');
+      return true;
     }
+    return false;
   };
 
   // Host launches game from Lobby

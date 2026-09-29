@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Music2, Sparkles, Disc, Loader2, Play, Library, Users } from 'lucide-react';
+import { Search, Music2, Sparkles, Disc, Loader2, Play, Library, Users, Shuffle, Check } from 'lucide-react';
 import { PRESET_THEMES, searchArtists, searchAlbums } from '../services/deezerApi';
 import type { CategoryTheme } from '../types/game';
 
@@ -10,6 +10,10 @@ interface ThemeSelectorProps {
 
 export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme, onOpenMultiplayer }) => {
   const [activeTab, setActiveTab] = useState<'themes' | 'search' | 'albums'>('themes');
+  
+  // Multi-theme selection (Mix Mode)
+  const [isMixMode, setIsMixMode] = useState(false);
+  const [selectedThemeIds, setSelectedThemeIds] = useState<string[]>([]);
   
   // Artist search
   const [searchQuery, setSearchQuery] = useState('');
@@ -85,6 +89,28 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme, onO
     onSelectTheme(customTheme);
   };
 
+  const toggleThemeSelection = (themeId: string) => {
+    setSelectedThemeIds(prev =>
+      prev.includes(themeId) ? prev.filter(id => id !== themeId) : [...prev, themeId]
+    );
+  };
+
+  const handleLaunchMix = () => {
+    const selectedThemes = PRESET_THEMES.filter(t => selectedThemeIds.includes(t.id));
+    if (selectedThemes.length < 2) return;
+
+    const mixedTheme: CategoryTheme = {
+      id: `mixed-${selectedThemes.map(t => t.id).join('-')}`,
+      name: selectedThemes.map(t => t.name).join(' + '),
+      description: `Mix combiné de ${selectedThemes.length} playlists (${selectedThemes.map(t => t.name).join(', ')})`,
+      icon: '🔀',
+      type: 'mixed',
+      combinedThemes: selectedThemes,
+      color: 'linear-gradient(135deg, #ff007f, #7928ca, #00f2fe)'
+    };
+    onSelectTheme(mixedTheme);
+  };
+
   return (
     <div className="theme-selector-container">
       {/* Hero Welcome Header */}
@@ -153,32 +179,103 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onSelectTheme, onO
 
       {/* TAB 1: Preset Playlists */}
       {activeTab === 'themes' && (
-        <div className="theme-grid">
-          {PRESET_THEMES.map((theme) => (
-            <div
-              key={theme.id}
-              className="theme-card"
-              onClick={() => onSelectTheme(theme)}
-              role="button"
-              tabIndex={0}
-              style={{ '--theme-gradient': theme.color } as React.CSSProperties}
+        <div className="themes-tab-wrapper">
+          {/* Sub-header with Mix Mode Toggle */}
+          <div className="themes-sub-bar">
+            <p className="themes-sub-hint">
+              {isMixMode
+                ? 'Sélectionnez au moins 2 playlists pour créer votre blind test combiné :'
+                : 'Choisissez une playlist ou combinez-en plusieurs avec le Mode Mix :'}
+            </p>
+            <button
+              className={`mix-mode-toggle-btn ${isMixMode ? 'active' : ''}`}
+              onClick={() => {
+                setIsMixMode(!isMixMode);
+                if (isMixMode) setSelectedThemeIds([]);
+              }}
             >
-              <div className="card-header-bg" style={{ background: theme.color }}>
-                <span className="theme-emoji">{theme.icon}</span>
+              <Shuffle className="icon-xs" />
+              <span>{isMixMode ? 'Désactiver le Mode Mix' : 'Mode Mix (Combiner les styles)'}</span>
+            </button>
+          </div>
+
+          <div className="theme-grid">
+            {PRESET_THEMES.map((theme) => {
+              const isSelected = selectedThemeIds.includes(theme.id);
+              return (
+                <div
+                  key={theme.id}
+                  className={`theme-card ${isMixMode ? 'mix-mode-card' : ''} ${isSelected ? 'selected' : ''}`}
+                  onClick={() => {
+                    if (isMixMode) {
+                      toggleThemeSelection(theme.id);
+                    } else {
+                      onSelectTheme(theme);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  style={{ '--theme-gradient': theme.color } as React.CSSProperties}
+                >
+                  <div className="card-header-bg" style={{ background: theme.color }}>
+                    <span className="theme-emoji">{theme.icon}</span>
+                    {isMixMode && (
+                      <div className={`mix-checkbox-badge ${isSelected ? 'checked' : ''}`}>
+                        {isSelected ? <Check className="icon-xs text-white" /> : null}
+                      </div>
+                    )}
+                  </div>
+                  <div className="card-body">
+                    <div className="theme-title-row">
+                      <h3 className="theme-name">{theme.name}</h3>
+                    </div>
+                    <p className="theme-desc">{theme.description}</p>
+                    <div className="card-footer">
+                      {isMixMode ? (
+                        <span className={`mix-select-pill ${isSelected ? 'active' : ''}`}>
+                          {isSelected ? '✓ Sélectionné' : '+ Ajouter au Mix'}
+                        </span>
+                      ) : (
+                        <span className="play-badge">
+                          <Play className="play-icon" /> Jouer
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Floating Sticky Bar when in Mix Mode with selections */}
+          {isMixMode && selectedThemeIds.length > 0 && (
+            <div className="mix-floating-bar">
+              <div className="mix-floating-info">
+                <div className="mix-floating-title">
+                  <Shuffle className="icon-sm text-cyan" />
+                  <span><strong>{selectedThemeIds.length}</strong> styles sélectionnés</span>
+                </div>
+                <p className="mix-floating-names">
+                  {PRESET_THEMES.filter(t => selectedThemeIds.includes(t.id)).map(t => t.name).join(' • ')}
+                </p>
               </div>
-              <div className="card-body">
-                <div className="theme-title-row">
-                  <h3 className="theme-name">{theme.name}</h3>
-                </div>
-                <p className="theme-desc">{theme.description}</p>
-                <div className="card-footer">
-                  <span className="play-badge">
-                    <Play className="play-icon" /> Jouer
-                  </span>
-                </div>
+              <div className="mix-floating-actions">
+                <button
+                  className="btn-secondary btn-sm"
+                  onClick={() => setSelectedThemeIds([])}
+                >
+                  Effacer
+                </button>
+                <button
+                  className="btn-primary mix-launch-btn"
+                  disabled={selectedThemeIds.length < 2}
+                  onClick={handleLaunchMix}
+                >
+                  <Play className="icon-xs" /> Lancer le Mix ({selectedThemeIds.length})
+                </button>
               </div>
             </div>
-          ))}
+          )}
         </div>
       )}
 

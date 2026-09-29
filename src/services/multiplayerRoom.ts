@@ -106,12 +106,14 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
     });
   };
 
+  let roomEstablished = isHost;
+
   const handlePresenceChange = () => {
     currentPresenceState = channel.presenceState();
     const players = parsePlayers(currentPresenceState);
 
-    // Auto-host migration if host left
-    if (players.length > 0 && !players.some(p => p.isHost)) {
+    // Auto-host migration only if host left after room was established
+    if (roomEstablished && players.length > 0 && !players.some(p => p.isHost)) {
       const newHost = players[0];
       if (newHost.id === myPlayerId && roomManager) {
         roomManager.isHost = true;
@@ -154,6 +156,43 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
   return new Promise((resolve) => {
     channel.subscribe(async (status: string) => {
       if (status === 'SUBSCRIBED') {
+        // If joining as guest, verify that the room exists and has an active Host
+        if (!isHost) {
+          const checkHostPresence = (): boolean => {
+            const state = channel.presenceState();
+            const currentPlayers = parsePlayers(state);
+            return currentPlayers.some(p => p.isHost && p.id !== myPlayerId);
+          };
+
+          let hasHost = checkHostPresence();
+          if (!hasHost) {
+            // Wait up to 800ms for presence sync from Supabase
+            await new Promise<void>((resolveCheck) => {
+              const timer = setTimeout(resolveCheck, 800);
+              const onSync = () => {
+                if (checkHostPresence()) {
+                  hasHost = true;
+                  clearTimeout(timer);
+                  resolveCheck();
+                }
+              };
+              channel.on('presence', { event: 'sync' }, onSync);
+            });
+          }
+
+          if (!hasHost) {
+            console.warn(`[Multiplayer] Room "${cleanCode}" does not exist or has no active host.`);
+            onConnectionStatus?.('error');
+            try {
+              await channel.unsubscribe();
+            } catch (_) {}
+            resolve(null);
+            return;
+          }
+
+          roomEstablished = true;
+        }
+
         onConnectionStatus?.('connected');
 
         // Track our presence

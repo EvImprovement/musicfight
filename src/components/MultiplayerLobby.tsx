@@ -61,12 +61,30 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
 
   const selectTheme = (theme: CategoryTheme) => {
     if (!isHost) return;
+    const currentThemeIds = settings.themeIds || [settings.themeId];
+    let nextThemeIds: string[];
+
+    if (currentThemeIds.includes(theme.id)) {
+      // If clicking already selected theme and more than 1 selected, toggle it off
+      if (currentThemeIds.length > 1) {
+        nextThemeIds = currentThemeIds.filter(id => id !== theme.id);
+      } else {
+        return;
+      }
+    } else {
+      nextThemeIds = [...currentThemeIds, theme.id];
+    }
+
+    const selectedThemes = PRESET_THEMES.filter(t => nextThemeIds.includes(t.id));
+    const isMulti = selectedThemes.length > 1;
+
     const next: RoomSettings = {
       ...settings,
-      themeId: theme.id,
-      themeName: theme.name,
-      themeIcon: theme.icon,
-      themeColor: theme.color
+      themeId: nextThemeIds[0],
+      themeIds: nextThemeIds,
+      themeName: isMulti ? selectedThemes.map(t => t.name).join(' + ') : selectedThemes[0].name,
+      themeIcon: isMulti ? '🔀' : selectedThemes[0].icon,
+      themeColor: isMulti ? 'linear-gradient(135deg, #ff007f, #7928ca, #00f2fe)' : selectedThemes[0].color
     };
     setSettings(next);
     manager.sendEvent({
@@ -97,18 +115,25 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
       let selectedTracks: Track[] = [];
       let distractors: Track[] = [];
 
-      if (settings.themeId === 'mix-all') {
-        // Fetch from multiple preset themes
-        const themesToSample = PRESET_THEMES.slice(0, 4);
-        for (const t of themesToSample) {
-          if (t.deezerId) {
-            const tr = await getPlaylistTracks(t);
-            selectedTracks.push(...tr.slice(0, 6));
-            distractors.push(...tr);
-          }
-        }
+      const currentThemeIds = settings.themeIds || [settings.themeId];
+      const selectedThemes = PRESET_THEMES.filter(t => currentThemeIds.includes(t.id));
+
+      if (selectedThemes.length > 1) {
+        // Multi-theme selection: combine playlists!
+        const mixedTheme: CategoryTheme = {
+          id: `mixed-${selectedThemes.map(t => t.id).join('-')}`,
+          name: selectedThemes.map(t => t.name).join(' + '),
+          description: `Mix combiné de ${selectedThemes.length} playlists`,
+          icon: '🔀',
+          type: 'mixed',
+          combinedThemes: selectedThemes,
+          color: settings.themeColor
+        };
+        const tr = await getPlaylistTracks(mixedTheme);
+        selectedTracks = tr;
+        distractors = tr;
       } else {
-        const currentTheme = PRESET_THEMES.find(t => t.id === settings.themeId) || PRESET_THEMES[0];
+        const currentTheme = selectedThemes[0] || PRESET_THEMES[0];
         if (currentTheme.deezerId) {
           const tr = await getPlaylistTracks(currentTheme);
           selectedTracks = tr;
@@ -263,37 +288,40 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
 
           {/* Theme selector */}
           <div className="settings-section">
-            <label className="section-label">Thème musical :</label>
-            <div className="themes-mini-grid">
-              {PRESET_THEMES.map((t) => (
-                <button
-                  key={t.id}
-                  disabled={!isHost}
-                  onClick={() => selectTheme(t)}
-                  className={`theme-mini-chip ${settings.themeId === t.id ? 'active' : ''}`}
-                  style={{
-                    borderColor: settings.themeId === t.id ? '#00f2fe' : undefined,
-                    background: settings.themeId === t.id ? 'rgba(0, 242, 254, 0.15)' : undefined
-                  }}
-                >
-                  <span className="theme-mini-icon">{t.icon}</span>
-                  <span className="theme-mini-name">{t.name}</span>
-                </button>
-              ))}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+              <label className="section-label" style={{ margin: 0 }}>Thème(s) musical :</label>
+              {isHost && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+                  {settings.themeIds && settings.themeIds.length > 1
+                    ? `🔀 ${settings.themeIds.length} styles combinés`
+                    : '💡 Cliquez pour combiner plusieurs thèmes'}
+                </span>
+              )}
+            </div>
 
-              {/* Mix all option */}
-              <button
-                disabled={!isHost}
-                onClick={() => updateSetting('themeId', 'mix-all')}
-                className={`theme-mini-chip ${settings.themeId === 'mix-all' ? 'active' : ''}`}
-                style={{
-                  borderColor: settings.themeId === 'mix-all' ? '#ff007f' : undefined,
-                  background: settings.themeId === 'mix-all' ? 'rgba(255, 0, 127, 0.15)' : undefined
-                }}
-              >
-                <span className="theme-mini-icon">🎲</span>
-                <span className="theme-mini-name">Mix de tous les thèmes</span>
-              </button>
+            <div className="themes-mini-grid">
+              {PRESET_THEMES.map((t) => {
+                const currentThemeIds = settings.themeIds || [settings.themeId];
+                const isSelected = currentThemeIds.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    disabled={!isHost}
+                    onClick={() => selectTheme(t)}
+                    className={`theme-mini-chip ${isSelected ? 'active' : ''}`}
+                    style={{
+                      borderColor: isSelected ? 'var(--accent-cyan)' : undefined,
+                      background: isSelected ? 'rgba(0, 242, 254, 0.18)' : undefined
+                    }}
+                  >
+                    <span className="theme-mini-icon">{t.icon}</span>
+                    <span className="theme-mini-name">{t.name}</span>
+                    {isSelected && currentThemeIds.length > 1 && (
+                      <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: 900 }}>✓</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

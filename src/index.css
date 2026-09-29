@@ -3545,3 +3545,305 @@ button:active {
     flex-direction: column;
   }
 }
+
+/* ==========================================================================
+   MIX MODE (MULTI-THEME SELECTION) STYLES
+   ========================================================================== */
+.themes-tab-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.themes-sub-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.25rem;
+  flex-wrap: wrap;
+}
+
+.themes-sub-hint {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin: 0;
+}
+
+.mix-mode-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid var(--border-glass);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.mix-mode-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent-cyan);
+}
+
+.mix-mode-toggle-btn.active {
+  background: linear-gradient(135deg, rgba(255, 0, 127, 0.25), rgba(121, 40, 202, 0.25));
+  border-color: var(--accent-pink);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);
+}
+
+.theme-card.mix-mode-card {
+  transition: all 0.22s cubic-bezier(0.165, 0.84, 0.44, 1);
+  position: relative;
+}
+
+.theme-card.mix-mode-card.selected {
+  border-color: var(--accent-pink);
+  box-shadow: 0 0 20px rgba(255, 0, 127, 0.35);
+  transform: translateY(-3px);
+}
+
+.mix-checkbox-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mix-checkbox-badge.checked {
+  background: var(--accent-pink);
+  border-color: var(--accent-pink);
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.6);
+}
+
+.mix-select-pill {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.mix-select-pill.active {
+  background: rgba(255, 0, 127, 0.25);
+  color: #fff;
+  border: 1px solid var(--accent-pink);
+}
+
+/* Floating Sticky Bar when in Mix Mode */
+.mix-floating-bar {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 2rem);
+  max-width: 640px;
+  background: rgba(17, 19, 38, 0.92);
+  border: 1.5px solid var(--border-glass-glow);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), var(--glow-cyan);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  z-index: 220;
+  animation: slideUpFloating 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpFloating {
+  from {
+    transform: translate(-50%, 40px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.mix-floating-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.mix-floating-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+.mix-floating-names {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.mix-floating-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.mix-launch-btn {
+  padding: 0.65rem 1.25rem;
+  font-size: 0.92rem;
+  font-weight: 800;
+  border-radius: 20px;
+  box-shadow: var(--glow-pink);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   COMPREHENSIVE MOBILE RESPONSIVENESS FIXES
+   ========================================================================== */
+@media (max-width: 640px) {
+  /* Hub Dialog */
+  .hub-modal-card {
+    padding: 1.4rem 1.1rem;
+    max-height: 92vh;
+    overflow-y: auto;
+    width: 95vw;
+  }
+
+  .hub-avatar-grid {
+    gap: 0.3rem;
+  }
+
+  .avatar-option-btn {
+    font-size: 1.2rem;
+    padding: 0.25rem 0.35rem;
+  }
+
+  /* Lobby Header & Settings */
+  .lobby-header-bar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .lobby-code-badge-group {
+    flex: 1;
+    min-width: 0;
+    gap: 0.45rem;
+  }
+
+  .lobby-code-value {
+    font-size: 1.05rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .themes-mini-grid {
+    grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+    gap: 0.45rem;
+  }
+
+  .theme-mini-chip {
+    padding: 0.5rem 0.65rem;
+  }
+
+  .theme-mini-name {
+    font-size: 0.75rem;
+  }
+
+  /* Multiplayer Gameboard Header & Mini Leaderboard */
+  .multiplayer-gameboard .gameboard-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .live-player-pills-row {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mini-player-badge {
+    padding: 0.22rem 0.5rem;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+  }
+
+  /* Question Card */
+  .options-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .option-button {
+    min-height: 56px;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .option-title {
+    font-size: 0.92rem;
+  }
+
+  .option-artist {
+    font-size: 0.75rem;
+  }
+
+  /* Mix Mode Floating Bar */
+  .mix-floating-bar {
+    bottom: 0.75rem;
+    width: calc(100% - 1.25rem);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.9rem 1.1rem;
+    gap: 0.85rem;
+  }
+
+  .mix-floating-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .mix-floating-actions button {
+    flex: 1;
+  }
+
+  /* Modal Cards */
+  .reveal-modal-card,
+  .scoreboard-modal-card {
+    max-width: 95vw;
+    padding: 1.35rem 1.1rem;
+  }
+
+  .countdown-number-display {
+    font-size: 4rem;
+  }
+}

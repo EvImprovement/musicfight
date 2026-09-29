@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Users, Plus, ArrowRight, X, Sparkles, KeyRound } from 'lucide-react';
+import { Users, Plus, ArrowRight, X, Sparkles, KeyRound, Loader2 } from 'lucide-react';
 import { getStoredPlayerName, setStoredPlayerName } from '../services/supabaseClient';
 import { getRandomAvatar, generateRoomCode } from '../services/multiplayerRoom';
 
 interface MultiplayerHubProps {
   initialCode?: string;
   onClose: () => void;
-  onJoinRoom: (roomCode: string, playerName: string, avatar: string, isHost: boolean) => void;
+  onJoinRoom: (roomCode: string, playerName: string, avatar: string, isHost: boolean) => Promise<boolean> | void;
 }
 
 const AVATAR_CHOICES = ['🦊', '🦁', '🐯', '🐼', '🚀', '🎧', '⚡', '👑', '🔥', '💎', '🎸', '🕹️'];
@@ -21,15 +21,19 @@ export const MultiplayerHub: React.FC<MultiplayerHubProps> = ({
   const [inputCode, setInputCode] = useState(initialCode);
   const [tab, setTab] = useState<'create' | 'join'>(initialCode ? 'join' : 'create');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const cleanName = playerName.trim() || 'Joueur' + Math.floor(Math.random() * 900 + 100);
     setStoredPlayerName(cleanName);
     const newCode = generateRoomCode();
-    onJoinRoom(newCode, cleanName, selectedAvatar, true);
+    setIsVerifying(true);
+    setErrorMsg(null);
+    await onJoinRoom(newCode, cleanName, selectedAvatar, true);
+    setIsVerifying(false);
   };
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanName = playerName.trim() || 'Joueur' + Math.floor(Math.random() * 900 + 100);
     const cleanCode = inputCode.trim().toUpperCase();
@@ -40,7 +44,15 @@ export const MultiplayerHub: React.FC<MultiplayerHubProps> = ({
     }
 
     setStoredPlayerName(cleanName);
-    onJoinRoom(cleanCode, cleanName, selectedAvatar, false);
+    setIsVerifying(true);
+    setErrorMsg(null);
+
+    const success = await onJoinRoom(cleanCode, cleanName, selectedAvatar, false);
+    setIsVerifying(false);
+
+    if (success === false) {
+      setErrorMsg(`Le salon "${cleanCode}" n'existe pas ou l'hôte s'est déconnecté.`);
+    }
   };
 
   return (
@@ -114,8 +126,16 @@ export const MultiplayerHub: React.FC<MultiplayerHubProps> = ({
             <p className="hub-action-desc">
               Vous serez l'<strong>Hôte</strong> du salon. Vous pourrez choisir les thèmes, le nombre de titres, et lancer la partie quand tout le monde est prêt.
             </p>
-            <button className="btn-primary hub-main-btn" onClick={handleCreate}>
-              <Sparkles className="icon-sm" /> Créer le salon privé
+            <button className="btn-primary hub-main-btn" onClick={handleCreate} disabled={isVerifying}>
+              {isVerifying ? (
+                <>
+                  <Loader2 className="spinner-icon icon-sm" /> Création du salon...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="icon-sm" /> Créer le salon privé
+                </>
+              )}
             </button>
           </div>
         ) : (
@@ -131,11 +151,20 @@ export const MultiplayerHub: React.FC<MultiplayerHubProps> = ({
                 value={inputCode}
                 onChange={(e) => setInputCode(e.target.value.toUpperCase())}
                 maxLength={8}
+                disabled={isVerifying}
                 autoFocus
               />
             </div>
-            <button type="submit" className="btn-primary hub-main-btn">
-              Rejoindre la partie <ArrowRight className="icon-sm" />
+            <button type="submit" className="btn-primary hub-main-btn" disabled={isVerifying}>
+              {isVerifying ? (
+                <>
+                  <Loader2 className="spinner-icon icon-sm" /> Vérification du salon...
+                </>
+              ) : (
+                <>
+                  Rejoindre la partie <ArrowRight className="icon-sm" />
+                </>
+              )}
             </button>
           </form>
         )}
