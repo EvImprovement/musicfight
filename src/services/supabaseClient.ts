@@ -174,8 +174,16 @@ export async function loginPlayer(
 }
 
 export async function saveGameScore(entry: Omit<LeaderboardEntry, 'id' | 'created_at'>): Promise<LeaderboardEntry> {
-  const newEntry: LeaderboardEntry = {
+  const profile = getStoredPlayerProfile();
+  const userId = profile?.id && !profile.id.startsWith('local_') ? profile.id : undefined;
+
+  const scorePayload = {
     ...entry,
+    ...(userId && !entry.user_id ? { user_id: userId } : {})
+  };
+
+  const newEntry: LeaderboardEntry = {
+    ...scorePayload,
     id: 'score_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
     created_at: new Date().toISOString()
   };
@@ -195,7 +203,17 @@ export async function saveGameScore(entry: Omit<LeaderboardEntry, 'id' | 'create
   // 2. Try saving to Supabase if configured
   if (supabase) {
     try {
-      const { data, error } = await supabase.from('leaderboard').insert([entry]).select().single();
+      const insertData: any = { ...scorePayload };
+      let { data, error } = await supabase.from('leaderboard').insert([insertData]).select().single();
+
+      // If user_id column doesn't exist yet on leaderboard table, retry without user_id
+      if (error && error.message?.includes('user_id')) {
+        delete insertData.user_id;
+        const retry = await supabase.from('leaderboard').insert([insertData]).select().single();
+        data = retry.data;
+        error = retry.error;
+      }
+
       if (!error && data) {
         return data as LeaderboardEntry;
       }

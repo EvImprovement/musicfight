@@ -60,6 +60,7 @@ export interface GameStats {
 
 export interface LeaderboardEntry {
   id: string;
+  user_id?: string;
   player_name: string;
   score: number;
   accuracy: number;

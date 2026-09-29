@@ -26,6 +26,19 @@ export default async (request: Request, context: any) => {
   const url = new URL(request.url);
   const clientIp = request.headers.get("x-nf-client-connection-ip") || request.headers.get("x-forwarded-for") || "unknown-ip";
 
+  // 1. Static assets & PWA files MUST bypass authentication so browsers and iOS SpringBoard can load icons & manifest without session cookies!
+  if (
+    url.pathname.match(/\.(png|jpe?g|webp|svg|ico|json|webmanifest|css|js|woff2?|ttf|map)$/i) ||
+    url.pathname.startsWith('/assets/') ||
+    url.pathname === '/apple-touch-icon.png' ||
+    url.pathname === '/apple-touch-icon-precomposed.png' ||
+    url.pathname === '/manifest.json' ||
+    url.pathname === '/favicon.ico' ||
+    url.pathname === '/logo.png'
+  ) {
+    return context.next();
+  }
+
   // Rate Limiting on API proxy calls (/api-deezer/*) : Max 60 requests / minute per IP
   if (url.pathname.startsWith('/api-deezer')) {
     if (isRateLimited(ipRateLimits, clientIp, 60, 60 * 1000)) {
@@ -98,6 +111,11 @@ function renderLoginPage(isError = false, customErrorMessage?: string) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Accès Restreint • MusicFight</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-precomposed.png">
+  <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
