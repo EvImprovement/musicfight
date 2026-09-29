@@ -3080,15 +3080,217 @@ button:active {
 
 .guest-waiting-indicator {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.65rem;
-  padding: 1.1rem;
-  background: rgba(255, 255, 255, 0.04);
+  text-align: center;
+  gap: 0.85rem;
+  padding: 1.5rem 1.25rem;
+  background: rgba(0, 242, 254, 0.05);
+  border: 1px dashed rgba(0, 242, 254, 0.35);
   border-radius: var(--radius-md);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-weight: 700;
+  width: 100%;
+}
+
+.guest-waiting-indicator .spinner-icon {
+  width: 2.2rem;
+  height: 2.2rem;
+  margin: 0 auto;
+}
+
+/* ==========================================================================
+   LOBBY ALBUM SELECTOR & THEME TABS
+   ========================================================================== */
+.lobby-theme-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.lobby-theme-tab-btn {
+  flex: 1;
+  padding: 0.55rem 0.85rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.lobby-theme-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+
+.lobby-theme-tab-btn.active {
+  background: rgba(0, 242, 254, 0.16);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.lobby-active-album-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(17, 153, 142, 0.2), rgba(56, 239, 125, 0.2));
+  border: 1px solid rgba(56, 239, 125, 0.45);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.85rem;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.lobby-active-album-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.5rem;
+}
+
+.lobby-active-album-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lobby-active-album-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lobby-active-album-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #38ef7d;
+}
+
+.lobby-active-album-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0.1rem 0 0;
+}
+
+.lobby-album-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.lobby-album-search-input {
+  width: 100%;
+  padding: 0.65rem 2.2rem 0.65rem 2.4rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 0.88rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.lobby-album-search-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+}
+
+.lobby-album-search-icon {
+  position: absolute;
+  left: 0.8rem;
+  pointer-events: none;
+}
+
+.lobby-album-search-spinner {
+  position: absolute;
+  right: 0.8rem;
+  pointer-events: none;
+}
+
+.lobby-album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.55rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.lobby-album-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.55rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.lobby-album-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.lobby-album-chip.active {
+  background: rgba(56, 239, 125, 0.15);
+  border-color: #38ef7d;
+}
+
+.lobby-album-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.lobby-album-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lobby-album-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lobby-album-artist {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ==========================================================================
@@ -3775,6 +3977,47 @@ button:active {
 
   .theme-mini-name {
     font-size: 0.75rem;
+  }
+
+  .lobby-theme-tab-btn {
+    font-size: 0.76rem;
+    padding: 0.5rem 0.4rem;
+  }
+
+  .lobby-album-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-height: 200px;
+    gap: 0.45rem;
+  }
+
+  .lobby-album-chip {
+    padding: 0.35rem 0.45rem;
+  }
+
+  .lobby-album-thumb {
+    width: 28px;
+    height: 28px;
+  }
+
+  .lobby-album-name {
+    font-size: 0.74rem;
+  }
+
+  .lobby-album-artist {
+    font-size: 0.65rem;
+  }
+
+  .guest-waiting-indicator {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .guest-waiting-indicator .spinner-icon {
+    width: 2.2rem;
+    height: 2.2rem;
+    margin: 0 auto;
   }
 
   /* Multiplayer Gameboard Header & Mini Leaderboard */

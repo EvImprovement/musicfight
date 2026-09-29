@@ -35,8 +35,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
   const getOptionStateClass = (opt: Option) => {
     if (!isAnswered) return '';
-    if (correctOption && opt.id === correctOption.id) return 'correct-answer';
-    if (selectedOption && opt.id === selectedOption.id) return 'wrong-answer';
+    if (correctOption && String(opt.id) === String(correctOption.id)) return 'correct-answer';
+    if (selectedOption && String(opt.id) === String(selectedOption.id)) return 'wrong-answer';
     return 'dimmed-answer';
   };
 
@@ -45,8 +45,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       <div className="options-grid">
         {options.map((option, index) => {
           const stateClass = getOptionStateClass(option);
-          const isSelected = selectedOption?.id === option.id;
-          const isCorrect = correctOption?.id === option.id;
+          const isSelected = selectedOption ? String(selectedOption.id) === String(option.id) : false;
+          const isCorrect = correctOption ? String(correctOption.id) === String(option.id) : false;
 
           return (
             <button

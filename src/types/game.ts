@@ -105,6 +105,10 @@ export interface RoomSettings {
   themeIcon: string;
   themeColor: string;
   themeIds?: string[];
+  themeType?: 'playlist' | 'artist' | 'chart' | 'album' | 'mixed';
+  albumId?: number | string;
+  albumArtist?: string;
+  albumCover?: string;
   trackCount: number;
   timePerTrack: number;
   gameplayMode: RoomGameplayMode;

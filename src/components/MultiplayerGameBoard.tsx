@@ -40,7 +40,7 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentOptions, setCurrentOptions] = useState<Option[]>([]);
-  const [_correctOption, setCorrectOption] = useState<Option | null>(null);
+  const [correctOptionState, setCorrectOption] = useState<Option | null>(null);
 
   // Round states
   const [countdown, setCountdown] = useState<number | null>(3); // 3... 2... 1... GO!
@@ -440,7 +440,7 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
 
     setSelectedOption(option);
     const responseTime = Date.now() - questionStartTimeRef.current;
-    const isCorrect = option.id === correctOptionRef.current.id;
+    const isCorrect = String(option.id) === String(correctOptionRef.current.id);
     const myPlayerName = playersRef.current.find(p => p.id === myPlayerId)?.name || 'Moi';
 
     if (settings.gameplayMode === 'buzzer') {
@@ -602,13 +602,21 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
           </div>
 
           {/* 4 Choices */}
-          <QuestionCard
-            options={currentOptions}
-            selectedOption={selectedOption}
-            correctOption={null}
-            isAnswered={isLockedOut || !!selectedOption}
-            onSelectOption={handleSelectOption}
-          />
+          {(() => {
+            const revealedCorrectOption = (selectedOption && String(selectedOption.id) === String(correctOptionState?.id))
+              ? selectedOption
+              : null;
+
+            return (
+              <QuestionCard
+                options={currentOptions}
+                selectedOption={selectedOption}
+                correctOption={revealedCorrectOption}
+                isAnswered={isLockedOut || !!selectedOption}
+                onSelectOption={handleSelectOption}
+              />
+            );
+          })()}
         </>
       )}
 

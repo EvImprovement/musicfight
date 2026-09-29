@@ -349,6 +349,11 @@ export async function getPlaylistTracks(theme: CategoryTheme): Promise<Track[]> 
     return unique.sort(() => Math.random() - 0.5);
   }
 
+  // If this is an album theme, fetch album tracks directly
+  if (theme.type === 'album' && theme.deezerId) {
+    return getAlbumTracks(theme.deezerId, theme.name, theme.query || '', theme.coverUrl);
+  }
+
   const allRawData: any[] = [];
 
   if (theme.type === 'chart') {
