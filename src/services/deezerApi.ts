@@ -6,11 +6,16 @@ export function cleanSongTitle(title: string): string {
   return title
     .replace(/\s*\([0-9]{4}\s+Remaster(ed)?\)/gi, '')
     .replace(/\s*\(Remaster(ed)?(\s+[0-9]{4})?\)/gi, '')
+    .replace(/\s*\(Remasterisé(\s+en\s+[0-9]{4})?\)/gi, '')
     .replace(/\s*\[Remaster(ed)?\]/gi, '')
     .replace(/\s*-\s*(Remastered|Radio Edit|Album Version|Single Version).*/gi, '')
     .replace(/\s*\(Radio Edit\)/gi, '')
     .replace(/\s*\(Album Version(\s+Explicit)?\)/gi, '')
     .replace(/\s*\(Single Version\)/gi, '')
+    .replace(/\s*\(From ".*?"(\s+Soundtrack)?\)/gi, '')
+    .replace(/\s*\(De ".*?"(\s*\/.*?Bande Originale.*?)?\)/gi, '')
+    .replace(/\s*\(Extrait de la bande originale.*?\)/gi, '')
+    .replace(/\s*\(Live.*?\)/gi, '')
     .trim();
 }
 
@@ -80,12 +85,17 @@ export const PRESET_THEMES: CategoryTheme[] = [
   {
     id: 'rap-fr',
     name: 'Rap Français',
-    description: 'Jul, Ninho, PNL, SCH, Gazo, Damso, Booba, NTM, IAM...',
+    description: 'Ninho, Jul, SCH, PNL, Gazo, Damso, Booba, PLK, Kaaris, Niska...',
     icon: '🎙️',
     type: 'playlist',
-    deezerId: '1999435002',
-    secondaryDeezerId: '6156189524',
-    query: 'Rap Francais',
+    deezerId: '5175061384',
+    secondaryDeezerId: '9563400362',
+    extraDeezerIds: [
+      '10013316202',
+      '11566938984',
+      '1999435002'
+    ],
+    query: 'Rap Francais Classiques Hits',
     coverUrl: 'https://images.deezer.com/images/cover/ed1a24d528b9fb6c6f7cbb115682245b/250x250.jpg',
     color: 'linear-gradient(135deg, #8e2de2, #4a00e0)',
     badge: 'Bangers FR'
@@ -134,8 +144,8 @@ export const PRESET_THEMES: CategoryTheme[] = [
     icon: '🏰',
     type: 'playlist',
     deezerId: '613860315',
-    secondaryDeezerId: '7548451242',
-    extraDeezerIds: ['11817251201'],
+    secondaryDeezerId: '1032758771',
+    extraDeezerIds: ['7548451242', '11817251201'],
     query: 'Disney Les Classiques',
     color: 'linear-gradient(135deg, #a8c0ff, #3f2b96)',
     badge: 'Magie Disney'
@@ -155,11 +165,12 @@ export const PRESET_THEMES: CategoryTheme[] = [
   {
     id: 'chanson-francaise',
     name: 'Chanson Française',
-    description: 'Goldman, Balavoine, Piaf, Aznavour, Stromae, Cabrel, Renaud...',
+    description: 'Goldman, Balavoine, Piaf, Aznavour, Berger, Cabrel, Renaud...',
     icon: '🇫🇷',
     type: 'playlist',
-    deezerId: '11462021084',
-    secondaryDeezerId: '700895155',
+    deezerId: '9608405702',
+    secondaryDeezerId: '7346990584',
+    extraDeezerIds: ['1420459465', '11462021084'],
     query: 'Les 100 plus belles chansons francaises',
     color: 'linear-gradient(135deg, #3a7bd5, #3a6073)',
     badge: 'Patrimoine FR'
@@ -344,8 +355,8 @@ function filterValidDeezerTracks(rawList: any[], defaultArtistName?: string): Tr
   // Sort by popularity rank descending so the blind test always uses the most well-known, iconic tracks!
   validList.sort((a, b) => b.rank - a.rank);
 
-  // Return the top tracks (up to 150 well-known songs)
-  return validList.slice(0, 150).map(({ rank, ...track }) => track);
+  // Return the top tracks (up to 250 well-known songs)
+  return validList.slice(0, 250).map(({ rank, ...track }) => track);
 }
 
 // Fetch general popular tracks on Deezer for extra distractors (100 tracks)
