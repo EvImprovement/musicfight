@@ -5,7 +5,7 @@ import { calculateQuestionScore } from '../utils/scoreCalculator';
 import { soundFx } from '../services/soundEffects';
 import { AudioVisualizer } from './AudioVisualizer';
 import { QuestionCard } from './QuestionCard';
-import { CheckCircle2, XCircle, Clock, Volume2, Trophy, Flame, LogOut, Users } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Trophy, Flame, LogOut, Users } from 'lucide-react';
 
 interface MultiplayerGameBoardProps {
   manager: MultiplayerRoomManager;
@@ -53,13 +53,31 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
   const [roundWinner, setRoundWinner] = useState<{ id: string; name: string; points: number } | null>(null);
 
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [isAudioBlocked, setIsAudioBlocked] = useState(false);
 
   // Audio refs & timers
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const questionStartTimeRef = useRef<number>(0);
   const trackTimerIntervalRef = useRef<number | null>(null);
   const countdownIntervalRef = useRef<number | null>(null);
+
+  // Synchronize audio element mute with Navbar soundFx toggle & cleanup timers
+  useEffect(() => {
+    const unsubMute = soundFx.subscribeMute((muted) => {
+      if (audioRef.current) {
+        audioRef.current.muted = muted;
+      }
+    });
+
+    return () => {
+      unsubMute();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+      if (trackTimerIntervalRef.current) clearInterval(trackTimerIntervalRef.current);
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    };
+  }, []);
 
   // Stable references for async callbacks & network events
   const hasStartedGameRef = useRef(false);
@@ -138,13 +156,22 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
 
   const playAudio = useCallback(() => {
     if (audioRef.current) {
+      audioRef.current.muted = soundFx.getMuted();
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
           setIsPlayingAudio(true);
-          setIsAudioBlocked(false);
-        }).catch(() => {
-          setIsAudioBlocked(true);
+        }).catch((err) => {
+          console.warn('[Audio] Autoplay blocked, listening for next user interaction:', err);
+          const resumeOnTouch = () => {
+            if (audioRef.current && stageRef.current === 'question') {
+              audioRef.current.play().then(() => setIsPlayingAudio(true)).catch(() => {});
+            }
+            window.removeEventListener('pointerdown', resumeOnTouch);
+            window.removeEventListener('touchstart', resumeOnTouch);
+          };
+          window.addEventListener('pointerdown', resumeOnTouch, { once: true, passive: true });
+          window.addEventListener('touchstart', resumeOnTouch, { once: true, passive: true });
         });
       }
     }
@@ -566,16 +593,6 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
         <>
           <div className="visualizer-section">
             <AudioVisualizer audioElement={audioRef.current} isPlaying={isPlayingAudio} />
-
-            {/* Audio Blocked Alert */}
-            {isAudioBlocked && (
-              <button
-                className="btn-primary start-audio-trigger-btn"
-                onClick={() => audioRef.current?.play()}
-              >
-                <Volume2 className="icon-sm" /> Activer le son
-              </button>
-            )}
 
             {/* Locked out alert */}
             {isLockedOut && (

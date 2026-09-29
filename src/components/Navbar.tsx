@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Volume2, VolumeX, Trophy, User, Music, HelpCircle, Users } from 'lucide-react';
 import { soundFx } from '../services/soundEffects';
 import { getStoredPlayerProfile } from '../services/supabaseClient';
@@ -20,6 +20,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [isMuted, setIsMuted] = useState(soundFx.getMuted());
   const profile = getStoredPlayerProfile();
+
+  useEffect(() => {
+    const unsub = soundFx.subscribeMute((muted) => {
+      setIsMuted(muted);
+    });
+    return unsub;
+  }, []);
 
   const toggleSound = () => {
     const nextState = !isMuted;
@@ -93,7 +100,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={toggleSound}
             className={`nav-btn icon-only-btn ${isMuted ? 'muted' : ''}`}
-            title={isMuted ? 'Activer le son' : 'Casser le son'}
+            title={isMuted ? 'Activer le son' : 'Couper le son'}
+            aria-label={isMuted ? 'Activer le son' : 'Couper le son'}
           >
             {isMuted ? <VolumeX className="icon-sm text-danger" /> : <Volume2 className="icon-sm text-accent" />}
           </button>

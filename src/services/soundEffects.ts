@@ -209,3 +209,20 @@ class SoundEffectsService {
 }
 
 export const soundFx = new SoundEffectsService();
+
+// Global mobile audio unlocker: unlocks AudioContext and HTMLAudioElement playback on first user tap/interaction
+if (typeof window !== 'undefined') {
+  const unlockAudio = () => {
+    soundFx.init();
+    // Tiny silent WAV sound to prime mobile browser media pipeline
+    const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+    silentAudio.play().catch(() => {});
+  };
+
+  const unlockEvents = ['touchstart', 'touchend', 'pointerdown', 'click', 'keydown'];
+  const handleFirstInteraction = () => {
+    unlockAudio();
+    unlockEvents.forEach(evt => window.removeEventListener(evt, handleFirstInteraction));
+  };
+  unlockEvents.forEach(evt => window.addEventListener(evt, handleFirstInteraction, { passive: true, once: true }));
+}
