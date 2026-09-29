@@ -56,6 +56,7 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
     options.onConnectionStatus?.('error');
     return null;
   }
+  const client = supabase;
 
   const { roomCode, name, avatar, isHost, onPlayersChange, onEvent, onConnectionStatus } = options;
   const cleanCode = roomCode.toUpperCase().trim();
@@ -63,7 +64,15 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
 
   onConnectionStatus?.('connecting');
 
-  const channel = supabase.channel(`room_${cleanCode}`, {
+  // Clean up any lingering channel instance with this topic in Supabase client
+  const existingChannel = client.getChannels().find(ch => ch.topic === `realtime:room_${cleanCode}`);
+  if (existingChannel) {
+    try {
+      await client.removeChannel(existingChannel);
+    } catch (_) {}
+  }
+
+  const channel = client.channel(`room_${cleanCode}`, {
     config: {
       presence: { key: myPlayerId },
       broadcast: { self: false }
@@ -77,6 +86,8 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
   }
 
   let roomManager: MultiplayerRoomManager | null = null;
+  let roomEstablished = isHost;
+  let onHostConfirmed: (() => void) | null = null;
 
   const parsePlayers = (presenceState: Record<string, any[]>): RoomPlayer[] => {
     const players: RoomPlayer[] = [];
@@ -106,11 +117,44 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
     });
   };
 
-  let roomEstablished = isHost;
+  const checkHasActiveHost = (state: Record<string, any[]>): boolean => {
+    for (const key of Object.keys(state)) {
+      const presences = state[key];
+      if (presences && presences.some(p => p.isHost && p.id !== myPlayerId)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Host answers PING from joining guests with fast PONG
+  if (isHost) {
+    channel.on('broadcast', { event: 'ROOM_PING' }, () => {
+      channel.send({
+        type: 'broadcast',
+        event: 'ROOM_PONG',
+        payload: { hostId: myPlayerId }
+      }).catch(() => {});
+    });
+  } else {
+    // Guest immediately confirms room validity upon receiving PONG
+    channel.on('broadcast', { event: 'ROOM_PONG' }, () => {
+      if (!roomEstablished) {
+        roomEstablished = true;
+        onHostConfirmed?.();
+      }
+    });
+  }
 
   const handlePresenceChange = () => {
     currentPresenceState = channel.presenceState();
     const players = parsePlayers(currentPresenceState);
+
+    // If guest was waiting for host presence, confirm now
+    if (!roomEstablished && !isHost && checkHasActiveHost(currentPresenceState)) {
+      roomEstablished = true;
+      onHostConfirmed?.();
+    }
 
     // Auto-host migration only if host left after room was established
     if (roomEstablished && players.length > 0 && !players.some(p => p.isHost)) {
@@ -125,7 +169,7 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
     onPlayersChange(players);
   };
 
-  // Listen to Presence
+  // Listen to Presence - MUST be registered BEFORE channel.subscribe()
   channel
     .on('presence', { event: 'sync' }, handlePresenceChange)
     .on('presence', { event: 'join' }, handlePresenceChange)
@@ -133,7 +177,7 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
 
   let lastQuestionStartEvent: RoomBroadcastEvent | null = null;
 
-  // Listen to Broadcasts
+  // Listen to Broadcasts - MUST be registered BEFORE channel.subscribe()
   channel.on('broadcast', { event: 'ROOM_EVENT' }, (envelope: any) => {
     if (envelope && envelope.payload) {
       const event = envelope.payload as RoomBroadcastEvent;
@@ -154,40 +198,44 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
   });
 
   return new Promise((resolve) => {
+    let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+
     channel.subscribe(async (status: string) => {
       if (status === 'SUBSCRIBED') {
         // If joining as guest, verify that the room exists and has an active Host
         if (!isHost) {
-          const checkHostPresence = (): boolean => {
-            const state = channel.presenceState();
-            const currentPlayers = parsePlayers(state);
-            return currentPlayers.some(p => p.isHost && p.id !== myPlayerId);
-          };
+          // Send instant PING broadcast to see if host is alive
+          channel.send({
+            type: 'broadcast',
+            event: 'ROOM_PING',
+            payload: { guestId: myPlayerId }
+          }).catch(() => {});
 
-          let hasHost = checkHostPresence();
-          if (!hasHost) {
-            // Wait up to 800ms for presence sync from Supabase
-            await new Promise<void>((resolveCheck) => {
-              const timer = setTimeout(resolveCheck, 800);
-              const onSync = () => {
-                if (checkHostPresence()) {
-                  hasHost = true;
-                  clearTimeout(timer);
-                  resolveCheck();
-                }
+          if (!checkHasActiveHost(channel.presenceState())) {
+            const confirmed = await new Promise<boolean>((resolveHostCheck) => {
+              onHostConfirmed = () => {
+                if (timeoutTimer) clearTimeout(timeoutTimer);
+                resolveHostCheck(true);
               };
-              channel.on('presence', { event: 'sync' }, onSync);
-            });
-          }
 
-          if (!hasHost) {
-            console.warn(`[Multiplayer] Room "${cleanCode}" does not exist or has no active host.`);
-            onConnectionStatus?.('error');
-            try {
-              await channel.unsubscribe();
-            } catch (_) {}
-            resolve(null);
-            return;
+              timeoutTimer = setTimeout(() => {
+                if (checkHasActiveHost(channel.presenceState())) {
+                  resolveHostCheck(true);
+                } else {
+                  resolveHostCheck(false);
+                }
+              }, 2500);
+            });
+
+            if (!confirmed) {
+              console.warn(`[Multiplayer] Room "${cleanCode}" does not exist or has no active host.`);
+              onConnectionStatus?.('error');
+              try {
+                await client.removeChannel(channel);
+              } catch (_) {}
+              resolve(null);
+              return;
+            }
           }
 
           roomEstablished = true;
@@ -238,7 +286,7 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
           leaveRoom: async () => {
             try {
               await channel.untrack();
-              await channel.unsubscribe();
+              await client.removeChannel(channel);
             } catch (_) {}
           },
           subscribeEvents: (callback: (event: RoomBroadcastEvent) => void) => {
@@ -258,7 +306,11 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
 
         resolve(roomManager);
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        if (timeoutTimer) clearTimeout(timeoutTimer);
         onConnectionStatus?.('error');
+        try {
+          await client.removeChannel(channel);
+        } catch (_) {}
         resolve(null);
       }
     });
