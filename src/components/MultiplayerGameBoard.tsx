@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Track, Option, RoomPlayer, RoomSettings, RoomBroadcastEvent } from '../types/game';
 import type { MultiplayerRoomManager } from '../services/multiplayerRoom';
 import { calculateQuestionScore } from '../utils/scoreCalculator';
+import { pickSmartDistractors } from '../utils/distractorHelper';
 import { soundFx } from '../services/soundEffects';
 import { AudioVisualizer } from './AudioVisualizer';
 import { QuestionCard } from './QuestionCard';
@@ -338,9 +339,9 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
     const track = tracks[index];
     if (!track) return;
 
-    // Pick 3 distractors from pool
-    const otherTracks = distractorPool.filter(t => t.id !== track.id && t.title !== track.title);
-    const shuffledOthers = [...otherTracks].sort(() => Math.random() - 0.5).slice(0, 3);
+    // Pick 3 distractors smartly from pool & game tracks
+    const candidatePool = [...tracks, ...distractorPool];
+    const pickedDistractors = pickSmartDistractors(track, candidatePool);
 
     const correctOpt: Option = {
       id: track.id,
@@ -349,7 +350,7 @@ export const MultiplayerGameBoard: React.FC<MultiplayerGameBoardProps> = ({
       isTrackTitle: true
     };
 
-    const distractorOpts: Option[] = shuffledOthers.map((t, idx) => ({
+    const distractorOpts: Option[] = pickedDistractors.map((t, idx) => ({
       id: `dist_${idx}_${t.id}`,
       title: t.title,
       artistName: t.artist.name,

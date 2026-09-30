@@ -3,6 +3,7 @@ import { Users, Crown, Copy, Check, Share2, Play, LogOut, Loader2, Music2, Shiel
 import type { RoomPlayer, RoomSettings, CategoryTheme, Track, Option } from '../types/game';
 import { PRESET_THEMES, getPlaylistTracks, searchAlbums, getAlbumTracks, searchArtists, getArtistTracks } from '../services/deezerApi';
 import type { MultiplayerRoomManager } from '../services/multiplayerRoom';
+import { pickSmartDistractors } from '../utils/distractorHelper';
 
 interface PresetAlbum {
   id: number;
@@ -571,14 +572,6 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
         }
         selectedTracks = uniqueTracks;
         distractors = [...uniqueTracks];
-
-        // If artist pool has fewer than 12 tracks, supplement distractors from the chart
-        if (distractors.length < 12) {
-          try {
-            const chartData = await getPlaylistTracks(PRESET_THEMES[0]);
-            distractors = [...distractors, ...chartData.filter(c => !distractors.some(d => d.id === c.id))];
-          } catch (_) {}
-        }
       } else if (settings.themeType === 'album' || settings.themeId.startsWith('album-')) {
         const albumsToFetch = (settings.albums && settings.albums.length > 0)
           ? settings.albums
@@ -625,11 +618,33 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
         selectedTracks = uniqueTracks;
         distractors = [...uniqueTracks];
 
-        // If album pool has fewer than 12 tracks, supplement distractors from the chart so 4 choices always exist
-        if (distractors.length < 12) {
+        // If album pool has fewer than 20 tracks, supplement distractors with top tracks of the album's artist(s)
+        // so baits are authentic songs by the same artist(s) and never contaminated by unrelated chart artists
+        if (distractors.length < 20) {
           try {
-            const chartData = await getPlaylistTracks(PRESET_THEMES[0]);
-            distractors = [...distractors, ...chartData.filter(c => !distractors.some(d => d.id === c.id))];
+            const albumArtists = Array.from(new Set(
+              albumsToFetch.map(a => a.artistName).concat(uniqueTracks.map(t => t.artist?.name || '')).filter(Boolean)
+            ));
+            const artistTracksPromises = albumArtists.map(async (artName) => {
+              const cleanArtist = artName.split(/feat\.|ft\.|&|,/i)[0].trim();
+              if (!cleanArtist) return [];
+              const foundArtists = await searchArtists(cleanArtist);
+              const artistObj = foundArtists.find(
+                art => art.name.toLowerCase().trim() === cleanArtist.toLowerCase().trim()
+              ) || foundArtists[0];
+              if (artistObj && artistObj.id) {
+                return await getArtistTracks(artistObj.id, artistObj.name);
+              }
+              return [];
+            });
+            const extraArtistTracks = (await Promise.all(artistTracksPromises)).flat();
+            for (const tr of extraArtistTracks) {
+              const key = `${tr.artist.name.toLowerCase().trim()}___${tr.title.toLowerCase().trim()}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                distractors.push(tr);
+              }
+            }
           } catch (_) {}
         }
       } else {
@@ -686,8 +701,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
 
       // Prepare Question 0 immediately so both Host and Guests start synchronously
       const track0 = shuffled[0];
-      const otherTracks = distractors.filter(t => t.id !== track0.id && t.title !== track0.title);
-      const shuffledOthers = [...otherTracks].sort(() => Math.random() - 0.5).slice(0, 3);
+      const pickedDistractors0 = pickSmartDistractors(track0, distractors);
 
       const correctOpt: Option = {
         id: track0.id,
@@ -696,7 +710,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
         isTrackTitle: true
       };
 
-      const distractorOpts: Option[] = shuffledOthers.map((t, idx) => ({
+      const distractorOpts: Option[] = pickedDistractors0.map((t, idx) => ({
         id: `dist_${idx}_${t.id}`,
         title: t.title,
         artistName: t.artist.name,
@@ -713,26 +727,35 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
         options
       };
 
-      // CRITICAL FIX: Trim distractorPool to max 25 lightweight items so WebSocket broadcast stays tiny (< 15 KB)
-      // and Supabase Realtime NEVER drops or rejects the broadcast when mixing multiple playlists, albums, or artists!
-      const compactDistractorPool: Track[] = distractors
-        .filter(t => !shuffled.some(s => s.id === t.id))
-        .slice(0, 25)
-        .map(t => ({
-          id: t.id,
-          title: t.title,
-          artist: {
-            id: t.artist?.id || '',
-            name: t.artist?.name || ''
-          },
-          album: {
-            id: t.album?.id || '',
-            title: t.album?.title || '',
-            cover_medium: t.album?.cover_medium,
-            cover_big: t.album?.cover_big
-          },
-          preview: ''
-        }));
+      // Build compactDistractorPool with max 35 lightweight items (< 15 KB WebSocket payload)
+      // Contains both extra pool tracks and game tracks so all questions have rich, authentic distractor options
+      const allDistractorCandidates = [
+        ...distractors.filter(t => !shuffled.some(s => s.id === t.id)),
+        ...shuffled
+      ];
+      const seenPool = new Set<string>();
+      const compactDistractorPool: Track[] = [];
+      for (const t of allDistractorCandidates) {
+        const strId = String(t.id);
+        if (!seenPool.has(strId) && compactDistractorPool.length < 35) {
+          seenPool.add(strId);
+          compactDistractorPool.push({
+            id: t.id,
+            title: t.title,
+            artist: {
+              id: t.artist?.id || '',
+              name: t.artist?.name || ''
+            },
+            album: {
+              id: t.album?.id || '',
+              title: t.album?.title || '',
+              cover_medium: t.album?.cover_medium,
+              cover_big: t.album?.cover_big
+            },
+            preview: ''
+          });
+        }
+      }
 
       // Broadcast start event to all guests with Question 0 included
       await manager.sendEvent({
