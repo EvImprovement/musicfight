@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Crown, Copy, Check, Share2, Play, LogOut, Loader2, Music2, ShieldAlert, Disc3, Search } from 'lucide-react';
+import { Users, Crown, Copy, Check, Share2, Play, LogOut, Loader2, Music2, ShieldAlert, Disc3, Search, Mic2 } from 'lucide-react';
 import type { RoomPlayer, RoomSettings, CategoryTheme, Track, Option } from '../types/game';
-import { PRESET_THEMES, getPlaylistTracks, searchAlbums, getAlbumTracks } from '../services/deezerApi';
+import { PRESET_THEMES, getPlaylistTracks, searchAlbums, getAlbumTracks, searchArtists, getArtistTracks } from '../services/deezerApi';
 import type { MultiplayerRoomManager } from '../services/multiplayerRoom';
 
 interface PresetAlbum {
@@ -20,6 +20,34 @@ const POPULAR_ALBUMS: PresetAlbum[] = [
   { id: 270762122, title: 'Civilisation', artistName: 'Orelsan', cover: 'https://cdn-images.dzcdn.net/images/cover/974e863966461c44768f0732752695c9/250x250-000000-80-0-0.jpg' },
   { id: 137272602, title: 'After Hours', artistName: 'The Weeknd', cover: 'https://cdn-images.dzcdn.net/images/cover/f520bf0be2e3cfc476824e75d20a164a/250x250-000000-80-0-0.jpg' },
   { id: 14720858, title: 'Cyborg', artistName: 'Nekfeu', cover: 'https://cdn-images.dzcdn.net/images/cover/bac0ea75cfad929e85de82ee823cd638/250x250-000000-80-0-0.jpg' }
+];
+
+interface PresetArtist {
+  id: number;
+  name: string;
+  picture: string;
+  genre: string;
+}
+
+const POPULAR_ARTISTS: PresetArtist[] = [
+  { id: 1191615, name: 'Jul', picture: 'https://cdn-images.dzcdn.net/images/artist/16eb681d72934d4db17088dfc216669d/250x250-000000-80-0-0.jpg', genre: 'Rap FR' },
+  { id: 5542343, name: 'Ninho', picture: 'https://cdn-images.dzcdn.net/images/artist/7601c5c0e2bd16cb585898316fd0dfec/250x250-000000-80-0-0.jpg', genre: 'Rap FR' },
+  { id: 1519461, name: 'PNL', picture: 'https://cdn-images.dzcdn.net/images/artist/9277fdce45b79945918c24f69cb6e8e3/250x250-000000-80-0-0.jpg', genre: 'Rap FR' },
+  { id: 9197980, name: 'Damso', picture: 'https://cdn-images.dzcdn.net/images/artist/f1a596b126611260994271ce4cb54bb0/250x250-000000-80-0-0.jpg', genre: 'Rap FR' },
+  { id: 259467, name: 'Orelsan', picture: 'https://cdn-images.dzcdn.net/images/artist/cb21b6617783e6050240ba76ca9b3034/250x250-000000-80-0-0.jpg', genre: 'Rap FR' },
+  { id: 1479842, name: 'PLK', picture: 'https://cdn-images.dzcdn.net/images/artist/f57f9dca944e55afdd99802491c49823/250x250-000000-80-0-0.jpg', genre: 'Rap FR' },
+  { id: 8873540, name: 'Gazo', picture: 'https://cdn-images.dzcdn.net/images/artist/54c1dc208f92240e9d56b595708ed284/250x250-000000-80-0-0.jpg', genre: 'Rap FR' },
+  { id: 1412564, name: 'Nekfeu', picture: 'https://cdn-images.dzcdn.net/images/artist/0c093e137a288db8d08133ecf092c213/250x250-000000-80-0-0.jpg', genre: 'Rap FR' },
+  { id: 162665, name: 'SCH', picture: 'https://cdn-images.dzcdn.net/images/artist/8d9c407bd25fab0fc961b6abf335e874/250x250-000000-80-0-0.jpg', genre: 'Rap FR' },
+  { id: 390, name: 'Booba', picture: 'https://cdn-images.dzcdn.net/images/artist/38b687e97c6874e744d305ef2ca8d0d0/250x250-000000-80-0-0.jpg', genre: 'Rap FR' },
+  { id: 4050205, name: 'The Weeknd', picture: 'https://cdn-images.dzcdn.net/images/artist/581693b4724a7fcfa754455101e13a44/250x250-000000-80-0-0.jpg', genre: 'Pop / R&B' },
+  { id: 246791, name: 'Drake', picture: 'https://cdn-images.dzcdn.net/images/artist/eb0ed5b21d1ea5af021fc074ded0e91f/250x250-000000-80-0-0.jpg', genre: 'Rap US' },
+  { id: 13, name: 'Eminem', picture: 'https://cdn-images.dzcdn.net/images/artist/0f30bbd33a680030054af004d698d6ac/250x250-000000-80-0-0.jpg', genre: 'Rap US' },
+  { id: 4495513, name: 'Travis Scott', picture: 'https://cdn-images.dzcdn.net/images/artist/8d8316146026d7e6ce377e314536df62/250x250-000000-80-0-0.jpg', genre: 'Rap US' },
+  { id: 27, name: 'Daft Punk', picture: 'https://cdn-images.dzcdn.net/images/artist/638e69b9caaf9f9f3f8826febea7b543/250x250-000000-80-0-0.jpg', genre: 'Electro' },
+  { id: 12246, name: 'Taylor Swift', picture: 'https://cdn-images.dzcdn.net/images/artist/cc2495870fe1a792ad0cdb05501ad5ec/250x250-000000-80-0-0.jpg', genre: 'Pop' },
+  { id: 564, name: 'Rihanna', picture: 'https://cdn-images.dzcdn.net/images/artist/b78cdc205fae2641b89208e78b30e1b3/250x250-000000-80-0-0.jpg', genre: 'Pop / R&B' },
+  { id: 259, name: 'Michael Jackson', picture: 'https://cdn-images.dzcdn.net/images/artist/97fae13b2b30e4aec2e8c9e0c7839d92/250x250-000000-80-0-0.jpg', genre: 'Pop' }
 ];
 
 interface MultiplayerLobbyProps {
@@ -51,7 +79,8 @@ const DEFAULT_SETTINGS: RoomSettings = {
   trackCount: 10,
   timePerTrack: 10,
   gameplayMode: 'buzzer',
-  albums: []
+  albums: [],
+  artists: []
 };
 
 export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
@@ -67,12 +96,23 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
-  const [themeTab, setThemeTab] = useState<'presets' | 'albums'>(
-    (initialSettings?.themeType === 'album' || initialSettings?.themeId.startsWith('album-')) ? 'albums' : 'presets'
-  );
+  const [themeTab, setThemeTab] = useState<'presets' | 'artists' | 'albums'>(() => {
+    if (initialSettings?.themeType === 'artist' || initialSettings?.themeId.startsWith('artist-')) {
+      return 'artists';
+    }
+    if (initialSettings?.themeType === 'album' || initialSettings?.themeId.startsWith('album-')) {
+      return 'albums';
+    }
+    return 'presets';
+  });
+
   const [albumQuery, setAlbumQuery] = useState('');
   const [albumResults, setAlbumResults] = useState<any[]>([]);
   const [isSearchingAlbums, setIsSearchingAlbums] = useState(false);
+
+  const [artistQuery, setArtistQuery] = useState('');
+  const [artistResults, setArtistResults] = useState<any[]>([]);
+  const [isSearchingArtists, setIsSearchingArtists] = useState(false);
 
   const isHost = manager.isHost || !!players.find(p => p.id === manager.myPlayerId)?.isHost;
 
@@ -80,7 +120,9 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
   useEffect(() => {
     if (initialSettings) {
       setSettings(initialSettings);
-      if (initialSettings.themeType === 'album' || initialSettings.themeId.startsWith('album-')) {
+      if (initialSettings.themeType === 'artist' || initialSettings.themeId.startsWith('artist-')) {
+        setThemeTab('artists');
+      } else if (initialSettings.themeType === 'album' || initialSettings.themeId.startsWith('album-')) {
         setThemeTab('albums');
       } else {
         setThemeTab('presets');
@@ -92,7 +134,9 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
     const unsub = manager.subscribeEvents((event) => {
       if (event.type === 'SETTINGS_UPDATE') {
         setSettings(event.settings);
-        if (event.settings.themeType === 'album' || event.settings.themeId.startsWith('album-')) {
+        if (event.settings.themeType === 'artist' || event.settings.themeId.startsWith('artist-')) {
+          setThemeTab('artists');
+        } else if (event.settings.themeType === 'album' || event.settings.themeId.startsWith('album-')) {
           setThemeTab('albums');
         } else {
           setThemeTab('presets');
@@ -104,7 +148,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
 
   // Synchronize settings to newly joined players
   useEffect(() => {
-    if (isHost && players.length > 1 && (settings.themeName || (settings.themeIds && settings.themeIds.length > 0) || (settings.albums && settings.albums.length > 0))) {
+    if (isHost && players.length > 1 && (settings.themeName || (settings.themeIds && settings.themeIds.length > 0) || (settings.albums && settings.albums.length > 0) || (settings.artists && settings.artists.length > 0))) {
       manager.sendEvent({
         type: 'SETTINGS_UPDATE',
         settings
@@ -133,6 +177,27 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
     return () => clearTimeout(timer);
   }, [albumQuery, themeTab]);
 
+  // Debounced search for artists
+  useEffect(() => {
+    if (!artistQuery.trim() || themeTab !== 'artists') {
+      setArtistResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearchingArtists(true);
+      try {
+        const res = await searchArtists(artistQuery);
+        setArtistResults(res);
+      } catch (_) {
+        setArtistResults([]);
+      } finally {
+        setIsSearchingArtists(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [artistQuery, themeTab]);
+
   // Synchronize settings changes if host updates them
   const updateSetting = <K extends keyof RoomSettings>(key: K, value: RoomSettings[K]) => {
     if (!isHost) return;
@@ -150,7 +215,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
     setThemeTab('presets');
     setStartError(null);
 
-    // Clean reset so no previous album or stale selections linger
+    // Clean reset so no previous album or artist selections linger
     const next: RoomSettings = {
       ...settings,
       themeId: '',
@@ -162,7 +227,35 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
       albumId: undefined,
       albumArtist: undefined,
       albumCover: undefined,
-      albums: []
+      albums: [],
+      artists: []
+    };
+    setSettings(next);
+    manager.sendEvent({
+      type: 'SETTINGS_UPDATE',
+      settings: next
+    });
+  };
+
+  const switchToArtists = () => {
+    if (!isHost) return;
+    setThemeTab('artists');
+    setStartError(null);
+
+    // Clean reset with NOTHING selected by default
+    const next: RoomSettings = {
+      ...settings,
+      themeId: 'artist-none',
+      themeIds: [],
+      themeType: 'artist',
+      themeName: '',
+      themeIcon: '🎤',
+      themeColor: 'linear-gradient(135deg, #f093fb, #f5576c)',
+      albumId: undefined,
+      albumArtist: undefined,
+      albumCover: undefined,
+      albums: [],
+      artists: []
     };
     setSettings(next);
     manager.sendEvent({
@@ -188,7 +281,8 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
       albumId: undefined,
       albumArtist: undefined,
       albumCover: undefined,
-      albums: []
+      albums: [],
+      artists: []
     };
     setSettings(next);
     manager.sendEvent({
@@ -200,7 +294,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
   const selectTheme = (theme: CategoryTheme) => {
     if (!isHost) return;
     setStartError(null);
-    const currentThemeIds = (settings.themeType !== 'album' && settings.themeIds)
+    const currentThemeIds = (settings.themeType !== 'album' && settings.themeType !== 'artist' && settings.themeIds)
       ? settings.themeIds
       : (settings.themeId ? [settings.themeId] : []);
     let nextThemeIds: string[];
@@ -223,7 +317,8 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
         albumId: undefined,
         albumArtist: undefined,
         albumCover: undefined,
-        albums: []
+        albums: [],
+        artists: []
       };
       setSettings(next);
       manager.sendEvent({
@@ -247,7 +342,73 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
       albumId: undefined,
       albumArtist: undefined,
       albumCover: undefined,
-      albums: []
+      albums: [],
+      artists: []
+    };
+    setSettings(next);
+    manager.sendEvent({
+      type: 'SETTINGS_UPDATE',
+      settings: next
+    });
+  };
+
+  const selectArtist = (artist: { id: number | string; name: string; picture?: string; nb_fans?: number }) => {
+    if (!isHost) return;
+    setStartError(null);
+
+    let currentArtists: { id: number | string; name: string; picture?: string; nb_fans?: number }[] = [];
+    if (settings.themeType === 'artist' && settings.artists && settings.artists.length > 0) {
+      currentArtists = [...settings.artists];
+    }
+
+    const isAlreadySelected = currentArtists.some(a => String(a.id) === String(artist.id));
+    let nextArtists: typeof currentArtists;
+
+    if (isAlreadySelected) {
+      nextArtists = currentArtists.filter(a => String(a.id) !== String(artist.id));
+    } else {
+      nextArtists = [...currentArtists, artist];
+    }
+
+    if (nextArtists.length === 0) {
+      const next: RoomSettings = {
+        ...settings,
+        themeId: 'artist-none',
+        themeIds: [],
+        themeType: 'artist',
+        themeName: '',
+        themeIcon: '🎤',
+        themeColor: 'linear-gradient(135deg, #f093fb, #f5576c)',
+        albumId: undefined,
+        albumArtist: undefined,
+        albumCover: undefined,
+        albums: [],
+        artists: []
+      };
+      setSettings(next);
+      manager.sendEvent({
+        type: 'SETTINGS_UPDATE',
+        settings: next
+      });
+      return;
+    }
+
+    const isMulti = nextArtists.length > 1;
+    const artistNames = nextArtists.map(a => a.name).join(' + ');
+
+    const next: RoomSettings = {
+      ...settings,
+      themeId: isMulti ? `artist-multi-${nextArtists.map(a => a.id).join('-')}` : `artist-${nextArtists[0].id}`,
+      themeIds: nextArtists.map(a => `artist-${a.id}`),
+      themeType: 'artist',
+      themeName: artistNames,
+      themeIcon: isMulti ? '🎤🔀' : '🎤',
+      themeColor: isMulti ? 'linear-gradient(135deg, #fa709a, #fee140, #ff0844)' : 'linear-gradient(135deg, #f093fb, #f5576c)',
+      albumId: undefined,
+      albumArtist: undefined,
+      albumCover: undefined,
+      albums: [],
+      artists: nextArtists
     };
     setSettings(next);
     manager.sendEvent({
@@ -293,7 +454,8 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
         albumId: undefined,
         albumArtist: undefined,
         albumCover: undefined,
-        albums: []
+        albums: [],
+        artists: []
       };
       setSettings(next);
       manager.sendEvent({
@@ -318,7 +480,8 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
       albumId: nextAlbums[0].id,
       albumArtist: artistNames,
       albumCover: nextAlbums[0].cover,
-      albums: nextAlbums
+      albums: nextAlbums,
+      artists: []
     };
     setSettings(next);
     manager.sendEvent({
@@ -340,19 +503,25 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const isArtistMode = themeTab === 'artists' || settings.themeType === 'artist';
   const isAlbumMode = themeTab === 'albums' || settings.themeType === 'album';
-  const hasValidSelection = isAlbumMode
-    ? Boolean(settings.albums && settings.albums.length > 0)
-    : Boolean((settings.themeIds && settings.themeIds.length > 0) || (settings.themeId && settings.themeId !== ''));
+
+  const hasValidSelection = isArtistMode
+    ? Boolean(settings.artists && settings.artists.length > 0)
+    : isAlbumMode
+      ? Boolean(settings.albums && settings.albums.length > 0)
+      : Boolean((settings.themeIds && settings.themeIds.length > 0) || (settings.themeId && settings.themeId !== ''));
 
   const handleHostLaunchGame = async () => {
     if (!isHost || isStarting) return;
 
     if (!hasValidSelection) {
       setStartError(
-        isAlbumMode
-          ? "Veuillez sélectionner au moins un album pour lancer la partie."
-          : "Veuillez sélectionner au moins un thème pour lancer la partie."
+        isArtistMode
+          ? "Veuillez sélectionner au moins un artiste pour lancer la partie."
+          : isAlbumMode
+            ? "Veuillez sélectionner au moins un album pour lancer la partie."
+            : "Veuillez sélectionner au moins un thème pour lancer la partie."
       );
       return;
     }
@@ -364,7 +533,53 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
       let selectedTracks: Track[] = [];
       let distractors: Track[] = [];
 
-      if (settings.themeType === 'album' || settings.themeId.startsWith('album-')) {
+      if (settings.themeType === 'artist' || settings.themeId.startsWith('artist-')) {
+        const artistsToFetch = (settings.artists && settings.artists.length > 0)
+          ? settings.artists
+          : [];
+
+        if (artistsToFetch.length === 0) {
+          setStartError("Veuillez sélectionner au moins un artiste pour lancer la partie.");
+          setIsStarting(false);
+          return;
+        }
+
+        const artistTracksPromises = artistsToFetch.map(a =>
+          getArtistTracks(a.id, a.name)
+        );
+        const artistResultsList = await Promise.all(artistTracksPromises);
+        const allFetchedTracks = artistResultsList.flat();
+
+        const seen = new Set<string>();
+        const uniqueTracks: Track[] = [];
+        for (const tr of allFetchedTracks) {
+          const key = `${tr.artist.name.toLowerCase().trim()}___${tr.title.toLowerCase().trim()}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueTracks.push(tr);
+          }
+        }
+
+        if (uniqueTracks.length < 4) {
+          setStartError(
+            artistsToFetch.length > 1
+              ? "Ces artistes ne contiennent pas assez d'extraits musicaux combinés. Essayez d'autres artistes."
+              : "Cet artiste ne contient pas assez d'extraits musicaux. Essayez un autre artiste."
+          );
+          setIsStarting(false);
+          return;
+        }
+        selectedTracks = uniqueTracks;
+        distractors = [...uniqueTracks];
+
+        // If artist pool has fewer than 12 tracks, supplement distractors from the chart
+        if (distractors.length < 12) {
+          try {
+            const chartData = await getPlaylistTracks(PRESET_THEMES[0]);
+            distractors = [...distractors, ...chartData.filter(c => !distractors.some(d => d.id === c.id))];
+          } catch (_) {}
+        }
+      } else if (settings.themeType === 'album' || settings.themeId.startsWith('album-')) {
         const albumsToFetch = (settings.albums && settings.albums.length > 0)
           ? settings.albums
           : (settings.albumId
@@ -460,7 +675,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
       }
 
       if (selectedTracks.length < 4) {
-        setStartError("Impossible de charger assez de morceaux pour ce thème. Essayez un autre thème.");
+        setStartError("Impossible de charger assez de morceaux. Essayez d'autres sélections.");
         setIsStarting(false);
         return;
       }
@@ -498,18 +713,42 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
         options
       };
 
+      // CRITICAL FIX: Trim distractorPool to max 25 lightweight items so WebSocket broadcast stays tiny (< 15 KB)
+      // and Supabase Realtime NEVER drops or rejects the broadcast when mixing multiple playlists, albums, or artists!
+      const compactDistractorPool: Track[] = distractors
+        .filter(t => !shuffled.some(s => s.id === t.id))
+        .slice(0, 25)
+        .map(t => ({
+          id: t.id,
+          title: t.title,
+          artist: {
+            id: t.artist?.id || '',
+            name: t.artist?.name || ''
+          },
+          album: {
+            id: t.album?.id || '',
+            title: t.album?.title || '',
+            cover_medium: t.album?.cover_medium,
+            cover_big: t.album?.cover_big
+          },
+          preview: ''
+        }));
+
       // Broadcast start event to all guests with Question 0 included
       await manager.sendEvent({
         type: 'GAME_STARTING',
         settings,
         tracks: shuffled,
-        distractorPool: distractors,
+        distractorPool: compactDistractorPool,
         startTimestamp,
         initialQuestion
       });
 
+      // Small buffer to guarantee network packet leaves socket before host navigates
+      await new Promise(r => setTimeout(r, 150));
+
       // Launch locally on host
-      onStartGame(settings, shuffled, distractors, initialQuestion);
+      onStartGame(settings, shuffled, compactDistractorPool, initialQuestion);
     } catch (err) {
       console.error(err);
       setStartError("Erreur réseau lors de la récupération des morceaux.");
@@ -634,11 +873,17 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
                         : (settings.themeIds && settings.themeIds.length === 1
                             ? `🎙️ ${settings.themeName}`
                             : '👉 Choisissez un ou plusieurs thèmes'))
-                    : (settings.albums && settings.albums.length > 1
-                        ? `💿 ${settings.albums.length} albums combinés`
-                        : (settings.albums && settings.albums.length === 1
-                            ? `💿 ${settings.themeName}`
-                            : '👉 Choisissez un ou plusieurs albums'))}
+                    : themeTab === 'artists'
+                      ? (settings.artists && settings.artists.length > 1
+                          ? `🎤 ${settings.artists.length} artistes combinés`
+                          : (settings.artists && settings.artists.length === 1
+                              ? `🎤 ${settings.themeName}`
+                              : '👉 Choisissez un ou plusieurs artistes'))
+                      : (settings.albums && settings.albums.length > 1
+                          ? `💿 ${settings.albums.length} albums combinés`
+                          : (settings.albums && settings.albums.length === 1
+                              ? `💿 ${settings.themeName}`
+                              : '👉 Choisissez un ou plusieurs albums'))}
                 </span>
               )}
             </div>
@@ -658,6 +903,73 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
                   </h4>
                 </div>
               </div>
+            )}
+
+            {/* Active Artist Banner (Artists mode) */}
+            {themeTab === 'artists' && (
+              settings.artists && settings.artists.length > 0 ? (
+                <div className="lobby-active-album-card lobby-active-artist-card">
+                  {settings.artists.length > 1 ? (
+                    <div className="lobby-active-album-covers-stack">
+                      {settings.artists.slice(0, 3).map((art, idx) => (
+                        <div
+                          key={art.id}
+                          className="lobby-stacked-cover-wrapper lobby-stacked-artist-wrapper"
+                          style={{ zIndex: 5 - idx, marginLeft: idx > 0 ? '-14px' : '0' }}
+                        >
+                          {art.picture ? (
+                            <img
+                              src={art.picture}
+                              alt={art.name}
+                              className="lobby-stacked-cover lobby-stacked-artist-cover"
+                              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                            />
+                          ) : (
+                            <span className="lobby-stacked-fallback">🎤</span>
+                          )}
+                        </div>
+                      ))}
+                      {settings.artists.length > 3 && (
+                        <span className="lobby-stacked-more">+{settings.artists.length - 3}</span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="lobby-active-album-cover lobby-active-artist-cover">
+                      {settings.artists[0].picture ? (
+                        <img
+                          src={settings.artists[0].picture}
+                          alt={settings.themeName}
+                          onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                        />
+                      ) : (
+                        <span>🎤</span>
+                      )}
+                    </div>
+                  )}
+                  <div className="lobby-active-album-details">
+                    <span className="lobby-active-album-tag" style={{ color: '#f5576c' }}>
+                      {settings.artists.length > 1
+                        ? `🎤 Duel / Mix d'artistes (${settings.artists.length} sélectionnés)`
+                        : '🎤 Artiste sélectionné'}
+                    </span>
+                    <h4 className="lobby-active-album-title">{settings.themeName}</h4>
+                  </div>
+                </div>
+              ) : (
+                <div className="lobby-active-album-card empty-album-selection">
+                  <div className="lobby-active-album-cover lobby-active-artist-cover">
+                    <span>🎤</span>
+                  </div>
+                  <div className="lobby-active-album-details">
+                    <span className="lobby-active-album-tag" style={{ color: '#f5576c' }}>
+                      Aucun artiste sélectionné
+                    </span>
+                    <h4 className="lobby-active-album-title" style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                      Cliquez sur un ou plusieurs artistes ci-dessous pour composer la partie
+                    </h4>
+                  </div>
+                </div>
+              )
             )}
 
             {/* Active Album Banner (Albums mode) */}
@@ -730,7 +1042,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
               )
             )}
 
-            {/* Theme Tabs (Playlists vs Albums) */}
+            {/* Theme Tabs (Playlists vs Artists vs Albums) */}
             {isHost && (
               <div className="lobby-theme-tabs">
                 <button
@@ -739,6 +1051,13 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
                   onClick={switchToPresets}
                 >
                   <Music2 className="icon-xs" /> Playlists ({PRESET_THEMES.length})
+                </button>
+                <button
+                  type="button"
+                  className={`lobby-theme-tab-btn ${themeTab === 'artists' ? 'active' : ''}`}
+                  onClick={switchToArtists}
+                >
+                  <Mic2 className="icon-xs" /> Artistes ({POPULAR_ARTISTS.length}+)
                 </button>
                 <button
                   type="button"
@@ -775,6 +1094,107 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
                     </button>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Content: Artists */}
+            {themeTab === 'artists' && (
+              <div className="lobby-albums-container">
+                {isHost && (
+                  <div className="lobby-album-search-wrapper">
+                    <Search className="icon-xs text-muted lobby-album-search-icon" />
+                    <input
+                      type="text"
+                      className="lobby-album-search-input"
+                      placeholder="Rechercher un artiste (ex: Ninho, Jul, Rihanna, Eminem...)"
+                      value={artistQuery}
+                      onChange={(e) => setArtistQuery(e.target.value)}
+                    />
+                    {isSearchingArtists && <Loader2 className="spinner-mini lobby-album-search-spinner" />}
+                  </div>
+                )}
+
+                {/* Artist Search Results */}
+                {artistResults.length > 0 && (
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Résultats de recherche :
+                    </span>
+                    <div className="lobby-album-grid" style={{ marginTop: '0.35rem' }}>
+                      {artistResults.map((art) => {
+                        const isSelected = settings.themeType === 'artist' && (
+                          settings.artists && settings.artists.some(a => String(a.id) === String(art.id))
+                        );
+                        return (
+                          <button
+                            key={art.id}
+                            type="button"
+                            disabled={!isHost}
+                            onClick={() => selectArtist(art)}
+                            className={`lobby-album-chip lobby-artist-chip ${isSelected ? 'active' : ''}`}
+                          >
+                            <div className="lobby-album-thumb-container lobby-artist-thumb-container">
+                              <img
+                                src={art.picture}
+                                alt={art.name}
+                                className="lobby-album-thumb lobby-artist-thumb"
+                                onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                              />
+                              {isSelected && <span className="lobby-album-check-badge">✓</span>}
+                            </div>
+                            <div className="lobby-album-meta">
+                              <span className="lobby-album-name">{art.name}</span>
+                              {art.nb_fans ? (
+                                <span className="lobby-album-artist">
+                                  {art.nb_fans >= 1000000
+                                    ? `${(art.nb_fans / 1000000).toFixed(1)}M fans`
+                                    : `${Math.round(art.nb_fans / 1000)}k fans`}
+                                </span>
+                              ) : null}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Preset Iconic Artists */}
+                <div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Artistes populaires :
+                  </span>
+                  <div className="lobby-album-grid" style={{ marginTop: '0.35rem' }}>
+                    {POPULAR_ARTISTS.map((art) => {
+                      const isSelected = settings.themeType === 'artist' && (
+                        settings.artists && settings.artists.some(a => String(a.id) === String(art.id))
+                      );
+                      return (
+                        <button
+                          key={art.id}
+                          type="button"
+                          disabled={!isHost}
+                          onClick={() => selectArtist(art)}
+                          className={`lobby-album-chip lobby-artist-chip ${isSelected ? 'active' : ''}`}
+                        >
+                          <div className="lobby-album-thumb-container lobby-artist-thumb-container">
+                            <img
+                              src={art.picture}
+                              alt={art.name}
+                              className="lobby-album-thumb lobby-artist-thumb"
+                              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                            />
+                            {isSelected && <span className="lobby-album-check-badge">✓</span>}
+                          </div>
+                          <div className="lobby-album-meta">
+                            <span className="lobby-album-name">{art.name}</span>
+                            <span className="lobby-album-artist">{art.genre}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
 

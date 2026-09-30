@@ -3727,6 +3727,34 @@ button:active {
   text-overflow: ellipsis;
 }
 
+/* Artist specific lobby styles */
+.lobby-artist-chip.active {
+  background: rgba(245, 87, 108, 0.18);
+  border-color: #f5576c;
+}
+
+.lobby-artist-thumb-container,
+.lobby-artist-thumb {
+  border-radius: 50% !important;
+}
+
+.lobby-artist-chip.active .lobby-album-check-badge {
+  background: #f5576c;
+  box-shadow: 0 0 6px rgba(245, 87, 108, 0.8);
+}
+
+.lobby-active-artist-card {
+  background: linear-gradient(135deg, rgba(240, 147, 251, 0.2), rgba(245, 87, 108, 0.2));
+  border-color: rgba(245, 87, 108, 0.45);
+}
+
+.lobby-stacked-artist-wrapper,
+.lobby-stacked-artist-cover,
+.lobby-active-artist-cover,
+.lobby-active-artist-cover img {
+  border-radius: 50% !important;
+}
+
 /* ==========================================================================
    MULTIPLAYER GAMEBOARD STYLES
    ========================================================================== */

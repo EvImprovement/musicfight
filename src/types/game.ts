@@ -110,6 +110,7 @@ export interface RoomSettings {
   albumArtist?: string;
   albumCover?: string;
   albums?: { id: number | string; title: string; artistName: string; cover?: string }[];
+  artists?: { id: number | string; name: string; picture?: string; nb_fans?: number }[];
   trackCount: number;
   timePerTrack: number;
   gameplayMode: RoomGameplayMode;

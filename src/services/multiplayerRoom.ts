@@ -34,7 +34,7 @@ export interface MultiplayerRoomManager {
   roomCode: string;
   myPlayerId: string;
   isHost: boolean;
-  sendEvent: (event: RoomBroadcastEvent) => Promise<void>;
+  sendEvent: (event: RoomBroadcastEvent) => Promise<string | void>;
   updateMyPresence: (updates: Partial<RoomPlayer>) => Promise<void>;
   leaveRoom: () => Promise<void>;
   subscribeEvents: (callback: (event: RoomBroadcastEvent) => void) => () => void;
@@ -282,13 +282,24 @@ export async function connectToMultiplayerRoom(options: ConnectRoomOptions): Pro
             isHost,
             sendEvent: async (event: RoomBroadcastEvent) => {
               try {
-                await channel.send({
+                let status = await channel.send({
                   type: 'broadcast',
                   event: 'ROOM_EVENT',
                   payload: event
                 });
+                if (status !== 'ok') {
+                  console.warn('[Multiplayer] sendEvent returned:', status, '- retrying once...');
+                  await new Promise(r => setTimeout(r, 120));
+                  status = await channel.send({
+                    type: 'broadcast',
+                    event: 'ROOM_EVENT',
+                    payload: event
+                  });
+                }
+                return status;
               } catch (err) {
                 console.error('Failed to broadcast room event:', err);
+                return 'error';
               }
             },
             updateMyPresence: async (updates: Partial<RoomPlayer>) => {
